@@ -1,0 +1,93 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+@theme {
+  /* Primary Colors */
+  --color-primary: #0061AA;
+  --color-charcoal: #46494B;
+  --color-light-grey: #778188;
+  --color-off-white: #F0F5F7;
+  --color-stroke: #DFEBF4;
+  --color-background: #F8FAFC;
+
+  /* Score Colors */
+  --color-score-green-bg: #DCFCE7;
+  --color-score-green-text: #166534;
+  --color-score-yellow-bg: #FFFACC;
+  --color-score-yellow-text: #C08703;
+  --color-score-grey-bg: #F0F5F7;
+  --color-score-grey-text: #778188;
+
+  /* Status Colors */
+  --color-status-new-bg: #DBEAFE;
+  --color-status-new-text: #1E40AF;
+  --color-status-returning-bg: #EBDBFE;
+  --color-status-returning-text: #311EAF;
+
+  /* KPI Icon Backgrounds */
+  --color-kpi-yellow: #FEF3C7;
+  --color-kpi-purple: #F3E8FF;
+  --color-kpi-green: #DCFCE7;
+
+  /* Avatar */
+  --color-avatar-bg: #F4EDDF;
+  --color-avatar-text: #AA3300;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-charcoal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure Leaflet styles don't conflict */
+.leaflet-container {
+  font-family: var(--font-sans);
+}
+
+/* Make Leaflet markers clickable */
+.leaflet-marker-icon {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.leaflet-marker-icon.custom-score-pin {
+  background: transparent !important;
+  border: none !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.leaflet-marker-icon.custom-score-pin * {
+  pointer-events: auto !important;
+}
+
+/* Leaflet popup styles */
+.leaflet-popup-close-button {
+  display: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+}
