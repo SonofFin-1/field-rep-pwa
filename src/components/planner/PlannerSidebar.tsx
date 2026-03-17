@@ -9,11 +9,11 @@ interface PlannerSidebarProps {
   appointments: Appointment[]
   leads: Lead[]
   selectedAppointmentIds: Set<string>
-  selectedLeadIds: Set<string>
   onToggleAppointment: (id: string) => void
-  onToggleLead: (id: string) => void
   onViewAppointment: (appointment: Appointment) => void
   onViewLead: (lead: Lead) => void
+  onScheduleLead: (lead: Lead) => void
+  scheduledLeadIds: Set<string>
   activeTab: SidebarTab
   onTabChange: (tab: SidebarTab) => void
   totalLeadCount: number
@@ -23,11 +23,11 @@ export function PlannerSidebar({
   appointments,
   leads,
   selectedAppointmentIds,
-  selectedLeadIds,
   onToggleAppointment,
-  onToggleLead,
   onViewAppointment,
   onViewLead,
+  onScheduleLead,
+  scheduledLeadIds,
   activeTab,
   onTabChange,
   totalLeadCount,
@@ -64,7 +64,7 @@ export function PlannerSidebar({
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 min-h-0 pt-2 pb-[72px]">
+      <div className="flex-1 min-h-0 pt-2">
         {activeTab === 'appointments' ? (
           <PlannerAppointments
             appointments={appointments}
@@ -75,9 +75,9 @@ export function PlannerSidebar({
         ) : (
           <PlannerLeadList
             leads={leads}
-            selectedIds={selectedLeadIds}
-            onToggle={onToggleLead}
             onViewLead={onViewLead}
+            onScheduleLead={onScheduleLead}
+            scheduledLeadIds={scheduledLeadIds}
           />
         )}
       </div>

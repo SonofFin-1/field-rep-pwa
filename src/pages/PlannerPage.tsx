@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { usePlannerState } from '@/hooks/usePlannerState'
 import { usePlannerSelection } from '@/hooks/usePlannerSelection'
-import { useMyPlan, generateStopsFromLeads } from '@/hooks/useMyPlan'
+import { useMyPlan } from '@/hooks/useMyPlan'
 import { useSchedulesContext } from '@/contexts/ScheduleContext'
 import { plannerAppointments, plannerLeads } from '@/data/appointments'
 import { mapLeads, leads as allLeadsData } from '@/data/leads'
@@ -13,7 +13,6 @@ import { defaultFilters } from '@/components/leads/LeadsFilterModal'
 
 import {
   PlannerSidebar,
-  PlannerBottomBar,
   LeadDetailPanel,
   MyPlanView,
   FeedbackModal,
@@ -22,6 +21,7 @@ import {
 } from '@/components/planner'
 import type { SidebarTab } from '@/components/planner/PlannerSidebar'
 import { PlannerMapGoogle } from '@/components/google-maps/PlannerMapGoogle'
+import { ScheduleModal } from '@/components/calendar/ScheduleModal'
 
 // Filter helper functions
 function matchesScoreFilter(score: number, filter: ScoreFilter): boolean {
@@ -60,26 +60,19 @@ export function PlannerPage() {
     showFeedbackModal,
     viewLead,
     closeLead,
-    createPlan,
-    backToSelection,
     openFeedbackModal,
     closeFeedbackModal,
   } = usePlannerState()
 
-  // Selection management for appointments
+  // Selection management for appointments only (leads no longer use multi-select)
   const {
     selectedLeadIds: selectedAppointmentIds,
-    selectedCount: selectedAppointmentCount,
     toggleLead: toggleAppointment,
   } = usePlannerSelection()
 
-  // Selection management for leads
-  const {
-    selectedLeadIds,
-    selectedCount: selectedLeadCount,
-    toggleLead,
-    isSelected: isLeadSelected,
-  } = usePlannerSelection()
+  // Schedule modal state for scheduling individual leads
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [leadToSchedule, setLeadToSchedule] = useState<Lead | null>(null)
 
   // Selected plan date state - initialize from URL param if present
   const [selectedPlanDate, setSelectedPlanDate] = useState<Date>(() => {
@@ -89,13 +82,16 @@ export function PlannerPage() {
     return new Date()
   })
 
+  // State for showing plan view when navigating from calendar
+  const [showPlanFromUrl, setShowPlanFromUrl] = useState(false)
+
   // Handle URL date param - switch to plan view if date param is present
   useEffect(() => {
     if (urlDateParam && /^\d{4}-\d{2}-\d{2}$/.test(urlDateParam)) {
       const date = parseDateKey(urlDateParam)
       setSelectedPlanDate(date)
       setPlanDate(date)
-      createPlan() // Switch to plan view
+      setShowPlanFromUrl(true) // Show plan view from URL navigation
       // Clear the URL param
       setSearchParams({}, { replace: true })
     }
@@ -110,7 +106,6 @@ export function PlannerPage() {
     acceptRecommended,
     denyRecommended,
     routeCoordinates,
-    createPlanFromLeads,
     addLeadToPlan,
     reorderStops,
     planDate,
@@ -119,7 +114,7 @@ export function PlannerPage() {
   } = useMyPlan(selectedPlanDate)
 
   // Schedules context for syncing calendar events and getting today's appointments
-  const { syncStopCompletion, getEventsForDate, deleteEvent, syncPlanToCalendar, updatePlanTimesOnCalendar } = useSchedulesContext()
+  const { syncStopCompletion, getEventsForDate, deleteEvent, addEvent, updatePlanTimesOnCalendar } = useSchedulesContext()
 
   // Sidebar tab state
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('appointments')
@@ -211,14 +206,16 @@ export function PlannerPage() {
     [baseCompleteStop, stops, syncStopCompletion, planDate]
   )
 
-  // Handle plan date change from bottom bar or MyPlanView
+  // Handle plan date change from MyPlanView
   const handlePlanDateChange = useCallback((newDate: Date) => {
     setSelectedPlanDate(newDate)
     setPlanDate(newDate)
   }, [setPlanDate])
 
-  // Combined selection count
-  const totalSelectedCount = selectedAppointmentCount + selectedLeadCount
+  // Handle going back from plan view (when navigated from calendar)
+  const handleBackFromPlanView = useCallback(() => {
+    setShowPlanFromUrl(false)
+  }, [])
 
   // All leads (unfiltered)
   const allLeads = useMemo(() => plannerLeads, [])
@@ -316,17 +313,6 @@ export function PlannerPage() {
     return leads
   }, [sidebarTab, todaysAppointments, allMapLeads, filteredLeads, scheduleFilter, scheduledLeadIds])
 
-  // Combined selected IDs for map highlighting
-  const allSelectedIds = useMemo(() => {
-    const combined = new Set<string>()
-    selectedAppointmentIds.forEach(id => {
-      const apt = todaysAppointments.find(a => a.id === id)
-      if (apt) combined.add(apt.leadId)
-    })
-    selectedLeadIds.forEach(id => combined.add(id))
-    return combined
-  }, [selectedAppointmentIds, selectedLeadIds, todaysAppointments])
-
   // Completed lead IDs for map (grayed out pins)
   const completedLeadIds = useMemo(() => {
     const completed = new Set<string>()
@@ -362,27 +348,18 @@ export function PlannerPage() {
 
   const handleMapAddToPlan = useCallback(
     (leadId: string) => {
-      console.log('[AddToPlan] Called with:', { leadId, view, isMyPlanView: view === 'myPlan' })
+      console.log('[AddToPlan] Called with:', { leadId, showPlanFromUrl })
 
-      // If we're in the plan view, add the lead directly to the plan
-      if (view === 'myPlan') {
+      // If we're in the plan view (from URL), add the lead directly to the plan
+      if (showPlanFromUrl) {
         const lead = allMapLeads.find(l => l.id === leadId)
         console.log('[AddToPlan] Found lead:', lead)
         if (lead) {
           addLeadToPlan(lead)
-          // Also toggle selection so the checkmark shows
-          if (!isLeadSelected(leadId)) {
-            toggleLead(leadId)
-          }
-        }
-      } else {
-        // Otherwise, toggle selection for plan creation
-        if (!isLeadSelected(leadId)) {
-          toggleLead(leadId)
         }
       }
     },
-    [view, allMapLeads, addLeadToPlan, isLeadSelected, toggleLead]
+    [showPlanFromUrl, allMapLeads, addLeadToPlan]
   )
 
   const handleMapViewDetails = useCallback(
@@ -393,22 +370,27 @@ export function PlannerPage() {
   )
 
   const handleAddToPlan = useCallback(() => {
-    if (selectedLead && !isLeadSelected(selectedLead.id)) {
-      toggleLead(selectedLead.id)
-    }
     closeLead()
-  }, [selectedLead, isLeadSelected, toggleLead, closeLead])
+  }, [closeLead])
 
-  const handleCreatePlan = useCallback(() => {
-    // Get the actual Lead objects for selected IDs
-    const selectedLeads = allMapLeads.filter(lead => allSelectedIds.has(lead.id))
-    createPlanFromLeads(selectedLeads, selectedPlanDate)
-    createPlan()
+  // Handler to open schedule modal with a lead pre-filled
+  const handleScheduleLead = useCallback((lead: Lead) => {
+    setLeadToSchedule(lead)
+    setShowScheduleModal(true)
+  }, [])
 
-    // Sync the plan stops to the calendar for the selected date
-    const planStops = generateStopsFromLeads(selectedLeads)
-    syncPlanToCalendar(planStops, selectedPlanDate)
-  }, [createPlan, allMapLeads, allSelectedIds, createPlanFromLeads, syncPlanToCalendar, selectedPlanDate])
+  // Handler when schedule modal saves
+  const handleScheduleModalSave = useCallback((eventData: Omit<ScheduleEvent, 'id' | 'status'>) => {
+    addEvent(eventData)
+    setShowScheduleModal(false)
+    setLeadToSchedule(null)
+  }, [addEvent])
+
+  // Handler to close schedule modal
+  const handleScheduleModalClose = useCallback(() => {
+    setShowScheduleModal(false)
+    setLeadToSchedule(null)
+  }, [])
 
   const handleGetDirections = useCallback(() => {
     // Get all stops with leads (excluding commutes)
@@ -496,7 +478,8 @@ export function PlannerPage() {
     stopsRef.current = stops
   }, [stops, updatePlanTimesOnCalendar, planDate])
 
-  const isMyPlanView = view === 'myPlan'
+  // Show plan view only when navigated from calendar URL
+  const isMyPlanView = showPlanFromUrl
   const isViewingLead = view === 'viewLead' && selectedLead
 
   return (
@@ -507,7 +490,7 @@ export function PlannerPage() {
           stops={stops}
           createdDate={createdDate}
           planDate={planDate}
-          onBack={backToSelection}
+          onBack={handleBackFromPlanView}
           onCompleteStop={completeStop}
           onMarkAllComplete={completeAllStops}
           onAcceptRecommended={acceptRecommended}
@@ -516,35 +499,24 @@ export function PlannerPage() {
           onGetDirections={handleGetDirections}
           onSchedule={handleSchedule}
           onOpenFeedback={openFeedbackModal}
-          onDeletePlan={backToSelection}
+          onDeletePlan={handleBackFromPlanView}
           onDateChange={handlePlanDateChange}
           hasPlanForDate={hasPlanForDate}
         />
       ) : (
-        <div className="relative h-full">
-          <PlannerSidebar
-            appointments={todaysAppointments}
-            leads={filteredLeads}
-            selectedAppointmentIds={selectedAppointmentIds}
-            selectedLeadIds={selectedLeadIds}
-            onToggleAppointment={toggleAppointment}
-            onToggleLead={toggleLead}
-            onViewAppointment={handleViewAppointment}
-            onViewLead={handleViewLead}
-            activeTab={sidebarTab}
-            onTabChange={setSidebarTab}
-            totalLeadCount={allLeads.length}
-          />
-          <PlannerBottomBar
-            selectedCount={totalSelectedCount}
-            onCreatePlan={handleCreatePlan}
-            existingPlanCount={stops.filter(s => s.lead).length}
-            onViewPlan={createPlan}
-            selectedDate={selectedPlanDate}
-            onDateChange={handlePlanDateChange}
-            hasPlanForDate={hasPlanForDate}
-          />
-        </div>
+        <PlannerSidebar
+          appointments={todaysAppointments}
+          leads={filteredLeads}
+          selectedAppointmentIds={selectedAppointmentIds}
+          onToggleAppointment={toggleAppointment}
+          onViewAppointment={handleViewAppointment}
+          onViewLead={handleViewLead}
+          onScheduleLead={handleScheduleLead}
+          scheduledLeadIds={scheduledLeadIds}
+          activeTab={sidebarTab}
+          onTabChange={setSidebarTab}
+          totalLeadCount={allLeads.length}
+        />
       )}
 
       {/* Map */}
@@ -562,7 +534,7 @@ export function PlannerPage() {
         )}
         <PlannerMapGoogle
           leads={isMyPlanView ? planLeads : visibleMapLeads}
-          selectedLeadIds={allSelectedIds}
+          selectedLeadIds={new Set<string>()}
           completedLeadIds={completedLeadIds}
           scheduledLeadIds={scheduledLeadIds}
           onSelectLead={handleMapSelectLead}
@@ -586,6 +558,14 @@ export function PlannerPage() {
           onRemoveFromCalendar={handleRemoveFromCalendar}
         />
       )}
+
+      {/* Schedule Modal for individual lead scheduling */}
+      <ScheduleModal
+        isOpen={showScheduleModal}
+        onClose={handleScheduleModalClose}
+        onSave={handleScheduleModalSave}
+        prefilledLead={leadToSchedule || undefined}
+      />
 
       {/* Feedback Modal */}
       <FeedbackModal

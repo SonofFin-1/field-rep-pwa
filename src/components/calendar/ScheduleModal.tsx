@@ -14,6 +14,7 @@ interface ScheduleModalProps {
   onDelete?: (eventId: string, leadId?: string, eventDate?: string) => void
   initialDate?: Date
   editingEvent?: ScheduleEvent
+  prefilledLead?: Lead
 }
 
 const eventTypes: { value: ScheduleEventType; label: string }[] = [
@@ -29,6 +30,7 @@ export function ScheduleModal({
   onDelete,
   initialDate,
   editingEvent,
+  prefilledLead,
 }: ScheduleModalProps) {
   const [title, setTitle] = useState('')
   const [leadId, setLeadId] = useState('')
@@ -73,6 +75,15 @@ export function ScheduleModal({
       setEndTime(editingEvent.endTime)
       setType(editingEvent.type)
       setNotes(editingEvent.notes || '')
+    } else if (prefilledLead) {
+      // Pre-fill with lead data when scheduling from planner
+      setLeadId(prefilledLead.id)
+      setTitle(`Appointment with ${prefilledLead.name}`)
+      setDate(initialDate ? formatDateKey(initialDate) : formatDateKey(new Date()))
+      setStartTime('09:00')
+      setEndTime('10:00')
+      setType('appointment')
+      setNotes('')
     } else if (initialDate) {
       setDate(formatDateKey(initialDate))
       setTitle('')
@@ -82,7 +93,7 @@ export function ScheduleModal({
       setType('appointment')
       setNotes('')
     }
-  }, [editingEvent, initialDate, isOpen])
+  }, [editingEvent, initialDate, isOpen, prefilledLead])
 
   const selectedLead = leads.find(l => l.id === leadId)
 

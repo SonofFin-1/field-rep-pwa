@@ -5,16 +5,16 @@ import type { Lead } from '@/data/types'
 
 interface PlannerLeadListProps {
   leads: Lead[]
-  selectedIds: Set<string>
-  onToggle: (id: string) => void
   onViewLead: (lead: Lead) => void
+  onScheduleLead: (lead: Lead) => void
+  scheduledLeadIds: Set<string>
 }
 
 export function PlannerLeadList({
   leads,
-  selectedIds,
-  onToggle,
   onViewLead,
+  onScheduleLead,
+  scheduledLeadIds,
 }: PlannerLeadListProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -42,9 +42,9 @@ export function PlannerLeadList({
             <PlannerLeadCard
               key={lead.id}
               lead={lead}
-              isSelected={selectedIds.has(lead.id)}
-              onToggle={() => onToggle(lead.id)}
               onClick={() => onViewLead(lead)}
+              onScheduleLead={onScheduleLead}
+              isScheduled={scheduledLeadIds.has(lead.id)}
             />
           ))}
         </div>
