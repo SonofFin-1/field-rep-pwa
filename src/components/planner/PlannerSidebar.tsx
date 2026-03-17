@@ -64,7 +64,7 @@ export function PlannerSidebar({
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 min-h-0 pt-2 pb-[72px]">
+      <div className="flex-1 min-h-0 pt-2 pb-[88px]">
         {activeTab === 'appointments' ? (
           <PlannerAppointments
             appointments={appointments}

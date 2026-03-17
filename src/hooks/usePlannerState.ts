@@ -28,7 +28,6 @@ export function usePlannerState() {
 
   const backToSelection = useCallback(() => {
     setView('selection')
-    setSelectedLead(null)
   }, [])
 
   const openFeedbackModal = useCallback(() => {
