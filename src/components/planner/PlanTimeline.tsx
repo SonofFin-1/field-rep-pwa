@@ -9,6 +9,7 @@ interface PlanTimelineProps {
   onAcceptRecommended: (stopId: string) => void
   onDenyRecommended: (stopId: string) => void
   onReorderStops?: (fromIndex: number, toIndex: number) => void
+  onUpdateStopTime?: (stopId: string, newTimeRange: string) => void
 }
 
 export function PlanTimeline({
@@ -17,6 +18,7 @@ export function PlanTimeline({
   onAcceptRecommended,
   onDenyRecommended,
   onReorderStops,
+  onUpdateStopTime,
 }: PlanTimelineProps) {
   const [feedbackStop, setFeedbackStop] = useState<PlanStop | null>(null)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
@@ -137,6 +139,7 @@ export function PlanTimeline({
                 onComplete={() => handleCompleteClick(stop)}
                 onAccept={() => onAcceptRecommended(stop.id)}
                 onDeny={() => onDenyRecommended(stop.id)}
+                onUpdateTime={onUpdateStopTime}
                 isDragging={draggedIndex === currentLeadIndex}
               />
             </div>

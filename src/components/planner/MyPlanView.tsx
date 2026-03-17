@@ -13,6 +13,7 @@ interface MyPlanViewProps {
   onAcceptRecommended: (stopId: string) => void
   onDenyRecommended: (stopId: string) => void
   onReorderStops: (fromIndex: number, toIndex: number) => void
+  onUpdateStopTime?: (stopId: string, newTimeRange: string) => void
   onGetDirections: () => void
   onSchedule: () => void
   onOpenFeedback: () => void
@@ -60,6 +61,7 @@ export function MyPlanView({
   onAcceptRecommended,
   onDenyRecommended,
   onReorderStops,
+  onUpdateStopTime,
   onGetDirections,
   onSchedule,
   onDeletePlan,
@@ -181,6 +183,7 @@ export function MyPlanView({
           onAcceptRecommended={onAcceptRecommended}
           onDenyRecommended={onDenyRecommended}
           onReorderStops={onReorderStops}
+          onUpdateStopTime={onUpdateStopTime}
         />
       </div>
 

@@ -113,6 +113,7 @@ export function PlannerPage() {
     createPlanFromLeads,
     addLeadToPlan,
     reorderStops,
+    updateStopTime,
     planDate,
     setPlanDate,
     hasPlanForDate,
@@ -486,7 +487,15 @@ export function PlannerPage() {
     [reorderStops]
   )
 
-  // Sync calendar times when stops change (after reorder)
+  // Handle updating stop time (calendar syncs automatically via useEffect)
+  const handleUpdateStopTime = useCallback(
+    (stopId: string, newTimeRange: string) => {
+      updateStopTime(stopId, newTimeRange)
+    },
+    [updateStopTime]
+  )
+
+  // Sync calendar times when stops change (after reorder or time edit)
   const stopsRef = useRef(stops)
   useEffect(() => {
     // Only update if stops have actually changed (not on initial render)
@@ -513,6 +522,7 @@ export function PlannerPage() {
           onAcceptRecommended={acceptRecommended}
           onDenyRecommended={denyRecommended}
           onReorderStops={handleReorderStops}
+          onUpdateStopTime={handleUpdateStopTime}
           onGetDirections={handleGetDirections}
           onSchedule={handleSchedule}
           onOpenFeedback={openFeedbackModal}

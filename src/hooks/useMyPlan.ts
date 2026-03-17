@@ -391,6 +391,15 @@ export function useMyPlan(initialDate?: Date) {
     })
   }, [])
 
+  // Update the time range for a specific stop
+  const updateStopTime = useCallback((stopId: string, newTimeRange: string) => {
+    setStops(prev =>
+      prev.map(stop =>
+        stop.id === stopId ? { ...stop, timeRange: newTimeRange } : stop
+      )
+    )
+  }, [])
+
   return {
     // Existing
     stops,
@@ -405,6 +414,7 @@ export function useMyPlan(initialDate?: Date) {
     clearPlan,
     reorderStops,
     removeStopByLeadId,
+    updateStopTime,
     // New - multi-date support
     planDate,
     planDateKey,

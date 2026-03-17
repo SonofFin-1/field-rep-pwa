@@ -11,6 +11,34 @@ type SchedulesContextType = ReturnType<typeof useSchedules> & {
 
 const SchedulesContext = createContext<SchedulesContextType | null>(null)
 
+// Parse a time range string like "9:00 AM-10:30 AM" into 24-hour format times
+function parseTimeRange(timeRange: string): { startTime: string; endTime: string } | null {
+  // Match both start and end times from format like "9:00 AM-10:30 AM"
+  const regex = /(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/i
+  const match = timeRange.match(regex)
+
+  if (!match) return null
+
+  // Parse start time
+  let startHours = parseInt(match[1])
+  const startMins = match[2]
+  const startIsPM = match[3].toUpperCase() === 'PM'
+  if (startIsPM && startHours !== 12) startHours += 12
+  if (!startIsPM && startHours === 12) startHours = 0
+
+  // Parse end time
+  let endHours = parseInt(match[4])
+  const endMins = match[5]
+  const endIsPM = match[6].toUpperCase() === 'PM'
+  if (endIsPM && endHours !== 12) endHours += 12
+  if (!endIsPM && endHours === 12) endHours = 0
+
+  return {
+    startTime: `${startHours.toString().padStart(2, '0')}:${startMins}`,
+    endTime: `${endHours.toString().padStart(2, '0')}:${endMins}`,
+  }
+}
+
 export function SchedulesProvider({ children }: { children: ReactNode }) {
   const schedules = useSchedules()
 
@@ -48,19 +76,8 @@ export function SchedulesProvider({ children }: { children: ReactNode }) {
         }
 
         // Parse time range (e.g., "9:00 AM-9:45 AM")
-        const timeMatch = stop.timeRange.match(/(\d+):(\d+)\s*(AM|PM)/i)
-        if (!timeMatch) return
-
-        let hours = parseInt(timeMatch[1])
-        const mins = timeMatch[2]
-        const isPM = timeMatch[3].toUpperCase() === 'PM'
-
-        if (isPM && hours !== 12) hours += 12
-        if (!isPM && hours === 12) hours = 0
-
-        const startTime = `${hours.toString().padStart(2, '0')}:${mins}`
-        const endHour = hours + 1
-        const endTime = `${endHour.toString().padStart(2, '0')}:${mins}`
+        const times = parseTimeRange(stop.timeRange)
+        if (!times) return
 
         schedules.addEvent({
           title: stop.lead.name,
@@ -68,8 +85,8 @@ export function SchedulesProvider({ children }: { children: ReactNode }) {
           leadName: stop.lead.name,
           address: stop.address,
           date: dateKey,
-          startTime,
-          endTime,
+          startTime: times.startTime,
+          endTime: times.endTime,
           type: 'appointment',
           notes: stop.notes || '',
         })
@@ -99,25 +116,14 @@ export function SchedulesProvider({ children }: { children: ReactNode }) {
         const existingEvent = existingEvents.find(e => e.leadId === stop.lead!.id)
         if (!existingEvent) return
 
-        // Parse time range (e.g., "9:00 AM-9:45 AM")
-        const timeMatch = stop.timeRange.match(/(\d+):(\d+)\s*(AM|PM)/i)
-        if (!timeMatch) return
-
-        let hours = parseInt(timeMatch[1])
-        const mins = timeMatch[2]
-        const isPM = timeMatch[3].toUpperCase() === 'PM'
-
-        if (isPM && hours !== 12) hours += 12
-        if (!isPM && hours === 12) hours = 0
-
-        const startTime = `${hours.toString().padStart(2, '0')}:${mins}`
-        const endHour = hours + 1
-        const endTime = `${endHour.toString().padStart(2, '0')}:${mins}`
+        // Parse time range (e.g., "9:00 AM-10:30 AM")
+        const times = parseTimeRange(stop.timeRange)
+        if (!times) return
 
         // Update the event with new times
         schedules.updateEvent(existingEvent.id, {
-          startTime,
-          endTime,
+          startTime: times.startTime,
+          endTime: times.endTime,
         })
       })
     },
