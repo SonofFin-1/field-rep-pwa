@@ -1,14 +1,22 @@
-import { useState } from 'react'
-import { X, Mic } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Mic, DollarSign, Phone, UserX, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ConversionScoreTag } from '@/components/shared'
+import type { StopOutcome } from '@/data/types'
 
 interface FeedbackModalProps {
   score: number
   isOpen: boolean
   onClose: () => void
-  onComplete: (notes: string, accuracy: number) => void
+  onComplete: (notes: string, accuracy: number, outcome: StopOutcome) => void
 }
+
+const outcomeOptions: { value: StopOutcome; label: string; icon: typeof DollarSign; color: string }[] = [
+  { value: 'sale', label: 'Sale', icon: DollarSign, color: 'bg-green-100 text-green-700 border-green-300' },
+  { value: 'callback', label: 'Callback', icon: Phone, color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { value: 'not_interested', label: 'Not Interested', icon: UserX, color: 'bg-orange-100 text-orange-700 border-orange-300' },
+  { value: 'not_home', label: 'Not Home', icon: Home, color: 'bg-gray-100 text-gray-700 border-gray-300' },
+]
 
 export function FeedbackModal({
   score,
@@ -16,17 +24,26 @@ export function FeedbackModal({
   onClose,
   onComplete,
 }: FeedbackModalProps) {
-  const [notes, setNotes] = useState('Cold call - expressed interest in smart home integration.')
+  const [notes, setNotes] = useState('')
   const [accuracy, setAccuracy] = useState<number | null>(null)
+  const [outcome, setOutcome] = useState<StopOutcome>(null)
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setNotes('')
+      setAccuracy(null)
+      setOutcome(null)
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
   const handleComplete = () => {
-    if (accuracy !== null) {
-      onComplete(notes, accuracy)
-      setNotes('')
-      setAccuracy(null)
-    }
+    onComplete(notes, accuracy || 0, outcome)
+    setNotes('')
+    setAccuracy(null)
+    setOutcome(null)
   }
 
   return (
@@ -53,6 +70,35 @@ export function FeedbackModal({
           <h2 className="text-xl font-semibold text-[#46494B] text-center">
             How was your stop?
           </h2>
+
+          {/* Outcome */}
+          <div className="mt-6">
+            <label className="text-sm font-medium text-[#46494B]">
+              What was the outcome?
+            </label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {outcomeOptions.map((option) => {
+                const Icon = option.icon
+                const isSelected = outcome === option.value
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setOutcome(option.value)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg border transition-colors",
+                      isSelected
+                        ? option.color
+                        : "bg-white text-[#46494B] border-[#DFEBF4] hover:border-[#0061AA]"
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           {/* Notes */}
           <div className="mt-6">
@@ -122,8 +168,7 @@ export function FeedbackModal({
             <button
               type="button"
               onClick={handleComplete}
-              disabled={accuracy === null}
-              className="px-6 py-2.5 text-sm font-semibold text-white bg-[#0061AA] rounded-full hover:bg-[#005090] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 text-sm font-semibold text-white bg-[#0061AA] rounded-full hover:bg-[#005090] transition-colors"
             >
               Complete
             </button>

@@ -16,7 +16,6 @@ import {
   PlannerBottomBar,
   LeadDetailPanel,
   MyPlanView,
-  FeedbackModal,
   MapFilterBar,
   type ScheduleFilter,
 } from '@/components/planner'
@@ -57,13 +56,10 @@ export function PlannerPage() {
     view,
     selectedLead,
     selectedAppointmentId,
-    showFeedbackModal,
     viewLead,
     closeLead,
     createPlan,
     backToSelection,
-    openFeedbackModal,
-    closeFeedbackModal,
   } = usePlannerState()
 
   // Selection management for appointments
@@ -106,6 +102,7 @@ export function PlannerPage() {
     stops,
     createdDate,
     completeStop: baseCompleteStop,
+    completeStopWithFeedback,
     completeAllStops,
     acceptRecommended,
     denyRecommended,
@@ -471,14 +468,6 @@ export function PlannerPage() {
     closeLead()
   }, [selectedLead, getEventsForDate, deleteEvent, closeLead])
 
-  const handleFeedbackComplete = useCallback(
-    (notes: string, accuracy: number) => {
-      console.log('Feedback submitted:', { notes, accuracy })
-      closeFeedbackModal()
-    },
-    [closeFeedbackModal]
-  )
-
   // Handle reordering stops and sync with calendar
   const handleReorderStops = useCallback(
     (fromIndex: number, toIndex: number) => {
@@ -518,6 +507,7 @@ export function PlannerPage() {
           planDate={planDate}
           onBack={backToSelection}
           onCompleteStop={completeStop}
+          onCompleteStopWithFeedback={completeStopWithFeedback}
           onMarkAllComplete={completeAllStops}
           onAcceptRecommended={acceptRecommended}
           onDenyRecommended={denyRecommended}
@@ -525,7 +515,6 @@ export function PlannerPage() {
           onUpdateStopTime={handleUpdateStopTime}
           onGetDirections={handleGetDirections}
           onSchedule={handleSchedule}
-          onOpenFeedback={openFeedbackModal}
           onDeletePlan={backToSelection}
           onDateChange={handlePlanDateChange}
           hasPlanForDate={hasPlanForDate}
@@ -596,14 +585,6 @@ export function PlannerPage() {
           onRemoveFromCalendar={handleRemoveFromCalendar}
         />
       )}
-
-      {/* Feedback Modal */}
-      <FeedbackModal
-        score={selectedLead?.score ?? 91}
-        isOpen={showFeedbackModal}
-        onClose={closeFeedbackModal}
-        onComplete={handleFeedbackComplete}
-      />
     </div>
   )
 }

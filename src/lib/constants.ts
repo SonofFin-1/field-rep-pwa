@@ -65,3 +65,12 @@ export const CALENDAR_EVENT_TYPES = {
   home_assessment: 'home_assessment',
   plan: 'plan',
 } as const
+
+// Daily planning targets
+export const PLANNING_TARGETS = {
+  CLIENTS_PER_DAY: 10,
+  WORK_START_HOUR: 8,
+  WORK_END_HOUR: 18,
+  CLIENT_DURATION_MIN: 30,
+  COMMUTE_DURATION_MIN: 15,
+} as const

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import type { PlanStop, Lead } from '@/data/types'
+import type { PlanStop, Lead, StopOutcome } from '@/data/types'
 
 const PLAN_STORAGE_KEY_PREFIX = 'field-rep-plan-'
 const LEGACY_PLAN_STORAGE_KEY = 'field-rep-plan'
@@ -51,6 +51,8 @@ function savePlanToStorage(stops: PlanStop[], createdDate: Date, planDate: Date)
       createdDate: createdDate.toISOString(),
     }
     localStorage.setItem(key, JSON.stringify(data))
+    // Dispatch custom event for same-tab listeners (e.g., Admin Dashboard)
+    window.dispatchEvent(new CustomEvent('plan-updated', { detail: { key } }))
   } catch (e) {
     console.error('Failed to save plan to storage:', e)
   }
@@ -118,14 +120,32 @@ function getAllPlanDateKeys(): string[] {
   return keys.sort()
 }
 
+// Work day: 8 AM to 6 PM (600 minutes)
+// Client stop: 30 min, Commute: 15 min
+// Pattern: Client (30) + Commute (15) = 45 min per cycle
+const WORK_START_HOUR = 8
+const CLIENT_DURATION = 30 // minutes
+const COMMUTE_DURATION = 15 // minutes
+
 function generateTimeRange(index: number): string {
-  const startHour = 9 + Math.floor(index * 0.75)
-  const startMin = (index * 45) % 60
-  const endHour = startHour + (startMin + 45 >= 60 ? 1 : 0)
-  const endMin = (startMin + 45) % 60
+  // Even indices are client stops, odd indices are commutes
+  const isCommute = index % 2 === 1
+  const cycleIndex = Math.floor(index / 2)
+
+  // Calculate start time in minutes from work start
+  const minutesFromStart = cycleIndex * (CLIENT_DURATION + COMMUTE_DURATION) +
+    (isCommute ? CLIENT_DURATION : 0)
+
+  const startHour = WORK_START_HOUR + Math.floor(minutesFromStart / 60)
+  const startMin = minutesFromStart % 60
+
+  const duration = isCommute ? COMMUTE_DURATION : CLIENT_DURATION
+  const endMinutes = minutesFromStart + duration
+  const endHour = WORK_START_HOUR + Math.floor(endMinutes / 60)
+  const endMin = endMinutes % 60
 
   const formatTime = (hour: number, min: number) => {
-    const h = hour > 12 ? hour - 12 : hour
+    const h = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour)
     const ampm = hour >= 12 ? 'PM' : 'AM'
     return `${h}:${min.toString().padStart(2, '0')} ${ampm}`
   }
@@ -217,6 +237,30 @@ export function useMyPlan(initialDate?: Date) {
     setStops(prev =>
       prev.map(stop =>
         stop.id === stopId ? { ...stop, isCompleted: !stop.isCompleted } : stop
+      )
+    )
+  }, [])
+
+  // Complete stop with feedback and outcome (for Admin Dashboard integration)
+  const completeStopWithFeedback = useCallback((
+    stopId: string,
+    outcome: StopOutcome,
+    feedback: { notes: string; accuracyRating: number }
+  ) => {
+    const now = new Date()
+    const completedTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+
+    setStops(prev =>
+      prev.map(stop =>
+        stop.id === stopId
+          ? {
+              ...stop,
+              isCompleted: true,
+              completedTime,
+              outcome,
+              feedback,
+            }
+          : stop
       )
     )
   }, [])
@@ -405,6 +449,7 @@ export function useMyPlan(initialDate?: Date) {
     stops,
     createdDate,
     completeStop,
+    completeStopWithFeedback,
     completeAllStops,
     acceptRecommended,
     denyRecommended,

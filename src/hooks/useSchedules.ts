@@ -5,7 +5,7 @@ import { isTimeInPast } from '@/lib/calendar-utils'
 
 const STORAGE_KEY = 'field-rep-schedules'
 const SEED_VERSION_KEY = 'field-rep-schedules-seed-version'
-const CURRENT_SEED_VERSION = '4' // Bump this to re-seed static events
+const CURRENT_SEED_VERSION = '5' // Bump this to clear mock data - now only plan-created events
 
 // Convert 12h time string (e.g., "9:00 AM") to 24h format (e.g., "09:00")
 function parse12hTo24h(time: string): string {

@@ -70,6 +70,8 @@ export interface CalendarEvent {
   status?: AppointmentStatus // For status color coding
 }
 
+export type StopOutcome = 'sale' | 'callback' | 'not_interested' | 'not_home' | null
+
 export interface PlanStop {
   id: string
   type: 'Appointment' | 'Commute' | 'Home Assessment' | 'Follow-up'
@@ -79,6 +81,9 @@ export interface PlanStop {
   notes?: string
   isCompleted: boolean
   isRecommended?: boolean
+  completedTime?: string // HH:MM when completed
+  outcome?: StopOutcome
+  feedback?: { notes: string; accuracyRating: number }
 }
 
 // Calendar Schedule Types

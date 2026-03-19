@@ -1,7 +1,7 @@
 import { ArrowLeft, Trash2, Navigation, Calendar, Search, CheckCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PlanTimeline } from './PlanTimeline'
 import { Avatar } from '@/components/shared'
-import type { PlanStop } from '@/data/types'
+import type { PlanStop, StopOutcome } from '@/data/types'
 
 interface MyPlanViewProps {
   stops: PlanStop[]
@@ -9,6 +9,7 @@ interface MyPlanViewProps {
   planDate: Date
   onBack: () => void
   onCompleteStop: (stopId: string) => void
+  onCompleteStopWithFeedback?: (stopId: string, outcome: StopOutcome, feedback: { notes: string; accuracyRating: number }) => void
   onMarkAllComplete: () => void
   onAcceptRecommended: (stopId: string) => void
   onDenyRecommended: (stopId: string) => void
@@ -16,7 +17,6 @@ interface MyPlanViewProps {
   onUpdateStopTime?: (stopId: string, newTimeRange: string) => void
   onGetDirections: () => void
   onSchedule: () => void
-  onOpenFeedback: () => void
   onDeletePlan?: () => void
   onDateChange?: (date: Date) => void
   hasPlanForDate?: (date: Date) => boolean
@@ -57,6 +57,7 @@ export function MyPlanView({
   planDate,
   onBack,
   onCompleteStop,
+  onCompleteStopWithFeedback,
   onMarkAllComplete,
   onAcceptRecommended,
   onDenyRecommended,
@@ -180,6 +181,7 @@ export function MyPlanView({
         <PlanTimeline
           stops={stops}
           onCompleteStop={onCompleteStop}
+          onCompleteStopWithFeedback={onCompleteStopWithFeedback}
           onAcceptRecommended={onAcceptRecommended}
           onDenyRecommended={onDenyRecommended}
           onReorderStops={onReorderStops}

@@ -8,6 +8,7 @@ export function usePlannerState() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [feedbackStopId, setFeedbackStopId] = useState<string | null>(null)
 
   const viewLead = useCallback((lead: Lead, appointmentId?: string) => {
     setSelectedLead(lead)
@@ -30,12 +31,14 @@ export function usePlannerState() {
     setView('selection')
   }, [])
 
-  const openFeedbackModal = useCallback(() => {
+  const openFeedbackModal = useCallback((stopId: string) => {
+    setFeedbackStopId(stopId)
     setShowFeedbackModal(true)
   }, [])
 
   const closeFeedbackModal = useCallback(() => {
     setShowFeedbackModal(false)
+    setFeedbackStopId(null)
   }, [])
 
   return {
@@ -43,6 +46,7 @@ export function usePlannerState() {
     selectedLead,
     selectedAppointmentId,
     showFeedbackModal,
+    feedbackStopId,
     viewLead,
     closeLead,
     createPlan,

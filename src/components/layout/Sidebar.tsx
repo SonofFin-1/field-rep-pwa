@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Map, Calendar, RefreshCw } from 'lucide-react'
+import { Map, Calendar, RefreshCw, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/shared/Avatar'
 import { currentUser } from '@/data/users'
@@ -9,6 +9,7 @@ import adtLogo from '@/assets/adt-logo.png'
 const navItems = [
   { path: '/', icon: Map, label: 'Planner' },
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
+  { path: '/admin', icon: LayoutDashboard, label: 'Admin' },
 ]
 
 export function Sidebar() {

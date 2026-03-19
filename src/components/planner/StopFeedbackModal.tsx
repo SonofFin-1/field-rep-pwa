@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react'
-import { X, Mic, MicOff, Check } from 'lucide-react'
+import { X, Mic, MicOff, Check, DollarSign, Phone, UserX, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLeadNotes } from '@/hooks/useLeadNotes'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
-import type { PlanStop } from '@/data/types'
+import type { PlanStop, StopOutcome } from '@/data/types'
 
 interface StopFeedbackModalProps {
   stop: PlanStop
   isOpen: boolean
   onClose: () => void
-  onComplete: (notes: string, accuracy: number) => void
+  onComplete: (notes: string, accuracy: number, outcome: StopOutcome) => void
 }
+
+const outcomeOptions: { value: StopOutcome; label: string; icon: typeof DollarSign; color: string }[] = [
+  { value: 'sale', label: 'Sale', icon: DollarSign, color: 'bg-green-100 text-green-700 border-green-300' },
+  { value: 'callback', label: 'Callback', icon: Phone, color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { value: 'not_interested', label: 'Not Interested', icon: UserX, color: 'bg-orange-100 text-orange-700 border-orange-300' },
+  { value: 'not_home', label: 'Not Home', icon: Home, color: 'bg-gray-100 text-gray-700 border-gray-300' },
+]
 
 export function StopFeedbackModal({
   stop,
@@ -20,6 +27,7 @@ export function StopFeedbackModal({
 }: StopFeedbackModalProps) {
   const [notes, setNotes] = useState('')
   const [accuracy, setAccuracy] = useState<number | null>(null)
+  const [outcome, setOutcome] = useState<StopOutcome>(null)
   const leadId = stop.lead?.id || ''
   const { addNote } = useLeadNotes(leadId)
   const {
@@ -44,6 +52,7 @@ export function StopFeedbackModal({
     if (isOpen) {
       setNotes('')
       setAccuracy(null)
+      setOutcome(null)
       resetTranscript()
     }
   }, [isOpen, resetTranscript])
@@ -53,7 +62,7 @@ export function StopFeedbackModal({
     if (notes.trim() && leadId) {
       addNote(notes.trim())
     }
-    onComplete(notes, accuracy || 0)
+    onComplete(notes, accuracy || 0, outcome)
   }
 
   const toggleVoice = () => {
@@ -92,6 +101,35 @@ export function StopFeedbackModal({
           <h2 className="text-xl font-semibold text-[#46494B] text-center mb-6">
             How was your stop?
           </h2>
+
+          {/* Outcome section */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-[#46494B] mb-2">
+              What was the outcome?
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {outcomeOptions.map((option) => {
+                const Icon = option.icon
+                const isSelected = outcome === option.value
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setOutcome(option.value)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg border transition-colors",
+                      isSelected
+                        ? option.color
+                        : "bg-white text-[#46494B] border-[#DFEBF4] hover:border-[#0061AA]"
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           {/* Notes section */}
           <div className="mb-6">

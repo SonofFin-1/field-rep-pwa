@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import { AppLayout } from '@/components/layout'
 import { PlannerPage } from '@/pages/PlannerPage'
 import { CalendarPage } from '@/pages/CalendarPage'
+import { AdminPage } from '@/pages/AdminPage'
 import { SchedulesProvider } from '@/contexts/ScheduleContext'
 import { LoginScreen } from '@/components/auth'
 
@@ -17,14 +18,15 @@ function App() {
 
   return (
     <SchedulesProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<PlannerPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/admin" element={<AdminPage />} />
           </Route>
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </SchedulesProvider>
   )
 }

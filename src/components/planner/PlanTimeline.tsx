@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react'
 import { PlanTimelineItem } from './PlanTimelineItem'
 import { StopFeedbackModal } from './StopFeedbackModal'
-import type { PlanStop } from '@/data/types'
+import type { PlanStop, StopOutcome } from '@/data/types'
 
 interface PlanTimelineProps {
   stops: PlanStop[]
   onCompleteStop: (stopId: string) => void
+  onCompleteStopWithFeedback?: (stopId: string, outcome: StopOutcome, feedback: { notes: string; accuracyRating: number }) => void
   onAcceptRecommended: (stopId: string) => void
   onDenyRecommended: (stopId: string) => void
   onReorderStops?: (fromIndex: number, toIndex: number) => void
@@ -15,6 +16,7 @@ interface PlanTimelineProps {
 export function PlanTimeline({
   stops,
   onCompleteStop,
+  onCompleteStopWithFeedback,
   onAcceptRecommended,
   onDenyRecommended,
   onReorderStops,
@@ -35,10 +37,15 @@ export function PlanTimeline({
     }
   }
 
-  const handleFeedbackComplete = (notes: string, accuracy: number) => {
+  const handleFeedbackComplete = (notes: string, accuracy: number, outcome: StopOutcome) => {
     if (feedbackStop) {
-      console.log('Feedback submitted:', { stopId: feedbackStop.id, notes, accuracy })
-      onCompleteStop(feedbackStop.id)
+      console.log('Feedback submitted:', { stopId: feedbackStop.id, notes, accuracy, outcome })
+      // Use new feedback-aware completion if available, otherwise fall back
+      if (onCompleteStopWithFeedback) {
+        onCompleteStopWithFeedback(feedbackStop.id, outcome, { notes, accuracyRating: accuracy })
+      } else {
+        onCompleteStop(feedbackStop.id)
+      }
       setFeedbackStop(null)
     }
   }
