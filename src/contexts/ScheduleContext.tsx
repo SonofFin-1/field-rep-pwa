@@ -76,9 +76,6 @@ export function SchedulesProvider({ children }: { children: ReactNode }) {
 
       // Re-fetch existing events after deletions
       const currentEvents = schedules.getEventsForDate(dateKey)
-      const existingLeadIds = new Set(
-        currentEvents.filter(e => e.leadId).map(e => e.leadId)
-      )
 
       // Track leads we add in this batch to prevent duplicates
       const addedLeadIds = new Set<string>()
@@ -86,8 +83,19 @@ export function SchedulesProvider({ children }: { children: ReactNode }) {
       stopsWithLeads.forEach(stop => {
         if (!stop.lead) return
 
-        // Skip if this lead already has an event or was already added in this batch
-        if (existingLeadIds.has(stop.lead.id) || addedLeadIds.has(stop.lead.id)) {
+        // Check if this lead already has an event
+        const existingEvent = currentEvents.find(e => e.leadId === stop.lead!.id)
+
+        if (existingEvent) {
+          // Update completion status if stop is completed but event isn't
+          if (stop.isCompleted && existingEvent.status !== 'completed') {
+            schedules.updateEvent(existingEvent.id, { status: 'completed' })
+          }
+          return
+        }
+
+        // Skip if already added in this batch
+        if (addedLeadIds.has(stop.lead.id)) {
           return
         }
 
@@ -95,7 +103,7 @@ export function SchedulesProvider({ children }: { children: ReactNode }) {
         const times = parseTimeRange(stop.timeRange)
         if (!times) return
 
-        schedules.addEvent({
+        const newEvent = schedules.addEvent({
           title: stop.lead.name,
           leadId: stop.lead.id,
           leadName: stop.lead.name,
@@ -106,6 +114,11 @@ export function SchedulesProvider({ children }: { children: ReactNode }) {
           type: 'appointment',
           notes: stop.notes || '',
         })
+
+        // If the stop is already completed, update the new event's status
+        if (stop.isCompleted) {
+          schedules.updateEvent(newEvent.id, { status: 'completed' })
+        }
 
         // Track that we added this lead
         addedLeadIds.add(stop.lead.id)
@@ -136,10 +149,11 @@ export function SchedulesProvider({ children }: { children: ReactNode }) {
         const times = parseTimeRange(stop.timeRange)
         if (!times) return
 
-        // Update the event with new times
+        // Update the event with new times and completion status
         schedules.updateEvent(existingEvent.id, {
           startTime: times.startTime,
           endTime: times.endTime,
+          status: stop.isCompleted ? 'completed' : existingEvent.status,
         })
       })
     },

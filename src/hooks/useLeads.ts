@@ -63,7 +63,7 @@ export function useLeads(
 
     // Apply filters
     if (filters.score !== 'all') {
-      result = result.filter(lead => matchesScoreFilter(lead.score, filters.score))
+      result = result.filter(lead => matchesScoreFilter(lead.score ?? 0, filters.score))
     }
 
     if (filters.status !== 'all') {
@@ -86,7 +86,7 @@ export function useLeads(
           comparison = a.name.localeCompare(b.name)
           break
         case 'score':
-          comparison = a.score - b.score
+          comparison = (a.score ?? 0) - (b.score ?? 0)
           break
         case 'location':
           comparison = a.city.localeCompare(b.city)

@@ -160,7 +160,7 @@ export function generateStopsFromLeads(selectedLeads: Lead[]): PlanStop[] {
     // Add the stop for this lead
     stops.push({
       id: `stop-${index * 2 + 1}`,
-      type: index === 0 ? 'Appointment' : 'Home Assessment',
+      type: 'Appointment',
       timeRange: generateTimeRange(index * 2),
       lead: lead,
       address: `${lead.address}, ${lead.city} ${lead.zip}`,
@@ -255,7 +255,7 @@ export function useMyPlan(initialDate?: Date) {
         const stopIndex = completedStops.length + index
         allLeadStops.push({
           id: `stop-${Date.now()}-${stopIndex}`,
-          type: 'Home Assessment',
+          type: 'Appointment',
           timeRange: generateTimeRange(stopIndex * 2),
           lead: lead,
           address: `${lead.address}, ${lead.city} ${lead.zip}`,
@@ -272,12 +272,13 @@ export function useMyPlan(initialDate?: Date) {
         // Add commute after each stop (except the last one)
         if (index < allLeadStops.length - 1) {
           const nextStop = allLeadStops[index + 1]
+          // Mark commute as completed if the stop before it is completed
           finalStops.push({
             id: `commute-${Date.now()}-${index}`,
             type: 'Commute',
             timeRange: generateTimeRange(index * 2 + 1),
             address: nextStop.lead ? `${nextStop.lead.address}, ${nextStop.lead.city}` : '',
-            isCompleted: false,
+            isCompleted: stop.isCompleted,
           })
         }
       })
@@ -356,7 +357,7 @@ export function useMyPlan(initialDate?: Date) {
       // Create new stop
       const newStop: PlanStop = {
         id: `stop-${Date.now()}`,
-        type: 'Home Assessment',
+        type: 'Appointment',
         timeRange: generateTimeRange(lastStopIndex * 2),
         lead: lead,
         address: `${lead.address}, ${lead.city} ${lead.zip}`,
@@ -421,7 +422,7 @@ export function useMyPlan(initialDate?: Date) {
             type: 'Commute',
             timeRange: generateTimeRange(index * 2 + 1),
             address: nextLead ? `${nextLead.address}, ${nextLead.city}` : '',
-            isCompleted: false,
+            isCompleted: stop.isCompleted,
           })
         }
       })
@@ -446,7 +447,7 @@ export function useMyPlan(initialDate?: Date) {
               type: 'Commute',
               timeRange: generateTimeRange(index * 2 + 1),
               address: nextLead ? `${nextLead.address}, ${nextLead.city}` : '',
-              isCompleted: false,
+              isCompleted: stop.isCompleted,
             })
           }
         })
@@ -477,6 +478,7 @@ export function useMyPlan(initialDate?: Date) {
         })
 
         // Add commute after each stop (except the last one)
+        // Mark commute as completed if the stop before it is completed
         if (index < leadStops.length - 1) {
           const nextLead = leadStops[index + 1].lead
           newStops.push({
@@ -484,7 +486,7 @@ export function useMyPlan(initialDate?: Date) {
             type: 'Commute',
             timeRange: generateTimeRange(index * 2 + 1),
             address: nextLead ? `${nextLead.address}, ${nextLead.city}` : '',
-            isCompleted: false,
+            isCompleted: stop.isCompleted,
           })
         }
       })

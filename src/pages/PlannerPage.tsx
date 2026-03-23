@@ -10,7 +10,7 @@ import { mapLeads, leads as allLeadsData } from '@/data/leads'
 import { formatDateKey, formatTime24to12 } from '@/lib/calendar-utils'
 import { generateOptimalRoute } from '@/lib/route-generator'
 import { USER_LOCATION, generateRandomLocationInTerritory } from '@/lib/map-utils'
-import type { Appointment, Lead, ScheduleEvent } from '@/data/types'
+import type { Appointment, Lead, ScheduleEvent, StopOutcome } from '@/data/types'
 import type { LeadsFilters, ScoreFilter, ValueFilter } from '@/components/leads/LeadsFilterModal'
 import { defaultFilters } from '@/components/leads/LeadsFilterModal'
 import { NewLeadModal } from '@/components/leads/NewLeadModal'
@@ -71,14 +71,11 @@ export function PlannerPage() {
   // Selection management for appointments
   const {
     selectedLeadIds: selectedAppointmentIds,
-    selectedCount: selectedAppointmentCount,
-    toggleLead: toggleAppointment,
   } = usePlannerSelection()
 
   // Selection management for leads
   const {
     selectedLeadIds,
-    selectedCount: selectedLeadCount,
     toggleLead,
     isSelected: isLeadSelected,
   } = usePlannerSelection()
@@ -108,7 +105,7 @@ export function PlannerPage() {
     stops,
     createdDate,
     completeStop: baseCompleteStop,
-    completeStopWithFeedback,
+    completeStopWithFeedback: baseCompleteStopWithFeedback,
     completeAllStops,
     acceptRecommended,
     denyRecommended,
@@ -218,17 +215,32 @@ export function PlannerPage() {
     })
   }, [getEventsForDate, todayKey, userLeads])
 
-  // Wrap completeStop to sync with calendar using planDate
+  // Wrap completeStop to sync with calendar using planDate and update user location
   const completeStop = useCallback(
     (stopId: string) => {
       const stop = stops.find(s => s.id === stopId)
       if (stop?.lead && !stop.isCompleted) {
         // Sync completion to calendar for the plan's date
         syncStopCompletion(stop.lead.id, planDate)
+        // Update user location to the completed stop's address
+        setUserLocation({ lat: stop.lead.lat, lng: stop.lead.lng })
       }
       baseCompleteStop(stopId)
     },
     [baseCompleteStop, stops, syncStopCompletion, planDate]
+  )
+
+  // Wrap completeStopWithFeedback to update user location
+  const completeStopWithFeedback = useCallback(
+    (stopId: string, outcome: StopOutcome, feedback: { notes: string; accuracyRating: number }) => {
+      const stop = stops.find(s => s.id === stopId)
+      if (stop?.lead) {
+        // Update user location to the completed stop's address
+        setUserLocation({ lat: stop.lead.lat, lng: stop.lead.lng })
+      }
+      baseCompleteStopWithFeedback(stopId, outcome, feedback)
+    },
+    [baseCompleteStopWithFeedback, stops]
   )
 
   // Handle plan date change from bottom bar or MyPlanView
@@ -236,9 +248,6 @@ export function PlannerPage() {
     setSelectedPlanDate(newDate)
     setPlanDate(newDate)
   }, [setPlanDate])
-
-  // Combined selection count
-  const totalSelectedCount = selectedAppointmentCount + selectedLeadCount
 
   // All leads (unfiltered) - including user-created leads
   const allLeads = useMemo(() => [...plannerLeads, ...userLeads], [userLeads])
@@ -557,7 +566,6 @@ export function PlannerPage() {
     stopsRef.current = stops
   }, [stops, updatePlanTimesOnCalendar, planDate])
 
-  const isMyPlanView = view === 'myPlan'
   const isViewingLead = view === 'viewLead' && selectedLead
   // Use shouldShowPlanView for UI that should persist when viewing lead from plan
   const showPlanUI = shouldShowPlanView
