@@ -92,7 +92,7 @@ function PlannerMapContent({
   completedLeadIds = new Set(),
   scheduledLeadIds = new Set(),
   onSelectLead,
-  onAddToPlan: _onAddToPlan,
+  onAddToPlan,
   onViewDetails,
   routeCoordinates,
   showRoute = false,
@@ -177,6 +177,11 @@ function PlannerMapContent({
     setActivePopupId(lead.id)
     onSelectLead(lead)
   }, [onSelectLead])
+
+  const handleAddToPlan = useCallback((leadId: string) => {
+    onAddToPlan(leadId)
+    setActivePopupId(null)
+  }, [onAddToPlan])
 
   const handleViewDetails = useCallback((lead: Lead) => {
     onViewDetails(lead)

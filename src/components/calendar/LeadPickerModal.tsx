@@ -44,13 +44,12 @@ export function LeadPickerModal({
 
       // Score filter
       let matchesScore = true
-      const score = lead.score ?? 0
       if (scoreFilter === 'excellent') {
-        matchesScore = score >= 85
+        matchesScore = lead.score >= 85
       } else if (scoreFilter === 'great') {
-        matchesScore = score >= 70 && score < 85
+        matchesScore = lead.score >= 70 && lead.score < 85
       } else if (scoreFilter === 'low') {
-        matchesScore = score < 70
+        matchesScore = lead.score < 70
       }
 
       // City filter

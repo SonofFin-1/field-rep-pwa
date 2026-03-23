@@ -77,7 +77,7 @@ function TerritoryMapContent() {
           position={{ lat: lead.lat, lng: lead.lng }}
           mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
         >
-          <SimplePin score={lead.score ?? 0} />
+          <SimplePin score={lead.score} />
         </OverlayView>
       ))}
     </GoogleMap>

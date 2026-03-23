@@ -40,7 +40,7 @@ export function PlannerMap({
   leads,
   selectedLeadIds,
   onSelectLead,
-  onAddToPlan: _onAddToPlan,
+  onAddToPlan,
   onViewDetails,
   routeCoordinates: _routeCoordinates,
   routePath,
@@ -52,6 +52,11 @@ export function PlannerMap({
   const handleMarkerClick = (lead: Lead) => {
     setActivePopup(lead.id)
     onSelectLead(lead)
+  }
+
+  const handleAddToPlan = (leadId: string) => {
+    onAddToPlan(leadId)
+    setActivePopup(null)
   }
 
   const handleViewDetails = (lead: Lead) => {
@@ -110,7 +115,7 @@ export function PlannerMap({
             <Marker
               key={lead.id}
               position={[lead.lat, lead.lng]}
-              icon={createScorePin(lead.score ?? 0, isSelected)}
+              icon={createScorePin(lead.score, isSelected)}
               ref={(ref) => {
                 if (ref) {
                   markerRefs.current.set(lead.id, ref)
