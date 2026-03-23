@@ -2,14 +2,16 @@ import { useState, useRef, useEffect } from 'react'
 import { Check, X, Sparkles, GripVertical, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ConversionScoreTag, StatusTag, ContactActions } from '@/components/shared'
-import type { PlanStop } from '@/data/types'
+import type { PlanStop, Lead } from '@/data/types'
 
 interface PlanTimelineItemProps {
   stop: PlanStop
+  stopNumber?: number // 1-indexed stop number for non-commute stops
   onComplete?: () => void
   onAccept?: () => void
   onDeny?: () => void
   onUpdateTime?: (stopId: string, newTimeRange: string) => void
+  onViewLead?: (lead: Lead) => void
   isDragging?: boolean
 }
 
@@ -50,10 +52,12 @@ function formatTimeRange(start: string, end: string): string {
 
 export function PlanTimelineItem({
   stop,
+  stopNumber,
   onComplete,
   onAccept,
   onDeny,
   onUpdateTime,
+  onViewLead,
   isDragging = false,
 }: PlanTimelineItemProps) {
   const [showTimeEditor, setShowTimeEditor] = useState(false)
@@ -99,27 +103,30 @@ export function PlanTimelineItem({
 
   return (
     <div className={cn("flex gap-3", isDragging && "opacity-50")}>
-      {/* Drag handle for non-commute stops */}
-      {!isCommute && (
-        <div className="flex items-start pt-0.5">
+      {/* Drag handle for non-commute stops, spacer for commute stops to maintain alignment */}
+      <div className="flex items-start pt-0.5 w-4">
+        {!isCommute && (
           <GripVertical className="w-4 h-4 text-[#778188] cursor-grab active:cursor-grabbing" />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Timeline indicator */}
       <div className="flex flex-col items-center">
         <div
           className={cn(
-            'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0',
+            'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold',
             stop.isCompleted
               ? 'bg-[#166534]'
               : isRecommended
               ? 'bg-[#FEF3C7]'
+              : stopNumber !== undefined
+              ? 'bg-[#0061AA] text-white'
               : 'bg-white border-2 border-[#DFEBF4]'
           )}
         >
           {stop.isCompleted && <Check className="w-4 h-4 text-white" />}
           {isRecommended && !stop.isCompleted && <Sparkles className="w-3 h-3 text-[#C08703]" />}
+          {!stop.isCompleted && !isRecommended && stopNumber !== undefined && stopNumber}
         </div>
         {/* Line to next item */}
         <div className="w-0.5 flex-1 bg-[#DFEBF4] min-h-[20px]" />
@@ -190,7 +197,13 @@ export function PlanTimelineItem({
               )}
             </div>
             {stop.lead && (
-              <p className="text-sm text-[#46494B] mt-0.5">{stop.lead.name}</p>
+              <button
+                type="button"
+                onClick={() => onViewLead?.(stop.lead!)}
+                className="text-sm text-[#0061AA] mt-0.5 hover:underline text-left"
+              >
+                {stop.lead.name}
+              </button>
             )}
             {stop.address.split('\n').map((line, idx) => (
               <p key={idx} className="text-xs text-[#778188] mt-0.5">{line}</p>

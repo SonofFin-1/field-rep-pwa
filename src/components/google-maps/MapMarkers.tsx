@@ -1,11 +1,12 @@
 import { getScorePinColor, PIN_COLORS } from '@/lib/map-utils'
 
 interface ScorePinProps {
-  score: number
+  score: number | null
   isSelected?: boolean
   isFocused?: boolean
   isCompleted?: boolean
   isScheduled?: boolean
+  stopNumber?: number // Route stop number (1, 2, 3...) - shown instead of score when in route mode
   onClick?: () => void
 }
 
@@ -13,7 +14,7 @@ interface ScorePinProps {
  * Score pin marker for Google Maps AdvancedMarkerElement
  * Use as a child of OverlayView or AdvancedMarkerElement
  */
-export function ScorePin({ score, isSelected = false, isFocused = false, isCompleted = false, isScheduled = false, onClick }: ScorePinProps) {
+export function ScorePin({ score, isSelected = false, isFocused = false, isCompleted = false, isScheduled = false, stopNumber, onClick }: ScorePinProps) {
   const color = getScorePinColor(score)
   const { bg, text } = PIN_COLORS[color]
 
@@ -119,7 +120,7 @@ export function ScorePin({ score, isSelected = false, isFocused = false, isCompl
             </svg>
           </div>
         )}
-        {score}
+        {stopNumber !== undefined ? stopNumber : (score === null ? '?' : score)}
       </div>
       <div
         className="w-0 h-0 -mt-px"

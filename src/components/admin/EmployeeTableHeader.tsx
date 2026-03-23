@@ -1,33 +1,30 @@
 import { ArrowUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { SortField, SortDirection } from '@/hooks/useAdminDashboard'
+import type { EmployeeSortField } from '@/data/admin-types'
+import type { SortDirection } from '@/hooks/useAdminDashboard'
 
-interface StopsTableHeaderProps {
-  sortBy: SortField
+interface EmployeeTableHeaderProps {
+  sortBy: EmployeeSortField
   sortDir: SortDirection
-  onSort: (field: SortField) => void
+  onSort: (field: EmployeeSortField) => void
 }
 
 interface ColumnConfig {
-  field: SortField | null
+  field: EmployeeSortField | null
   label: string
   width: string
   sortable: boolean
-  align?: 'left' | 'center'
+  align?: 'left' | 'center' | 'right'
 }
 
 const columns: ColumnConfig[] = [
-  { field: 'rep', label: 'Rep', width: 'w-[80px]', sortable: true },
-  { field: 'lead', label: 'Lead', width: 'w-[160px]', sortable: true },
-  { field: null, label: 'Address', width: 'w-[200px]', sortable: false },
-  { field: 'date', label: 'Date', width: 'w-[100px]', sortable: true },
-  { field: 'status', label: 'Status', width: 'w-[100px]', sortable: true },
-  { field: 'outcome', label: 'Outcome', width: 'w-[120px]', sortable: true },
-  { field: null, label: 'Notes', width: 'w-[60px]', sortable: false, align: 'center' },
-  { field: 'rating', label: 'Rating', width: 'w-[100px]', sortable: true },
+  { field: 'name', label: 'Employee', width: 'flex-1', sortable: true },
+  { field: 'completion', label: 'Stops', width: 'w-[200px]', sortable: true },
+  { field: 'rating', label: 'Avg Stop Rating', width: 'w-[140px]', sortable: true },
+  { field: null, label: '', width: 'w-[40px]', sortable: false }, // Arrow column
 ]
 
-export function StopsTableHeader({ sortBy, sortDir, onSort }: StopsTableHeaderProps) {
+export function EmployeeTableHeader({ sortBy, sortDir, onSort }: EmployeeTableHeaderProps) {
   return (
     <div className="flex items-center py-3 px-4 border-b border-[#DFEBF4] bg-[#F8FAFC]">
       {columns.map((col, index) => (
@@ -36,6 +33,7 @@ export function StopsTableHeader({ sortBy, sortDir, onSort }: StopsTableHeaderPr
           className={cn(
             col.width,
             col.align === 'center' && 'text-center',
+            col.align === 'right' && 'text-right',
             col.sortable && 'cursor-pointer hover:text-[#0061AA]',
             col.field && sortBy === col.field ? 'text-[#0061AA]' : 'text-[#778188]'
           )}

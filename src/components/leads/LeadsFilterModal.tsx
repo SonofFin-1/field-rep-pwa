@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { X, ChevronDown, Search } from 'lucide-react'
 import { leads } from '@/data/leads'
 
-export type ScoreFilter = 'all' | 'excellent' | 'great' | 'low'
+export type ScoreFilter = 'all' | 'excellent' | 'great' | 'low' | 'unscored'
 export type StatusFilter = 'all' | 'New' | 'Returning'
 export type ValueFilter = 'all' | 'high' | 'medium' | 'low'
 
@@ -34,6 +34,7 @@ const scoreOptions: { value: ScoreFilter; label: string }[] = [
   { value: 'excellent', label: 'Excellent (85+)' },
   { value: 'great', label: 'Great (70-84)' },
   { value: 'low', label: 'Low (<70)' },
+  { value: 'unscored', label: 'Unscored (?)' },
 ]
 
 const statusOptions: { value: StatusFilter; label: string }[] = [

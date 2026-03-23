@@ -10,7 +10,7 @@ interface UseDirectionsResult {
   directions: google.maps.DirectionsResult | null
   loading: boolean
   error: string | null
-  calculateRoute: (waypoints: Waypoint[]) => void
+  calculateRoute: (waypoints: Waypoint[], userLocation?: Waypoint) => void
   clearRoute: () => void
 }
 
@@ -38,7 +38,7 @@ export function useDirections(): UseDirectionsResult {
   const [error, setError] = useState<string | null>(null)
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null)
 
-  const calculateRoute = useCallback((waypoints: Waypoint[]) => {
+  const calculateRoute = useCallback((waypoints: Waypoint[], userLocation?: Waypoint) => {
     if (waypoints.length === 0) {
       console.log('[Directions] No waypoints provided')
       setDirections(null)
@@ -60,8 +60,9 @@ export function useDirections(): UseDirectionsResult {
     setLoading(true)
     setError(null)
 
-    // Origin is user location
-    const origin = new google.maps.LatLng(USER_LOCATION.lat, USER_LOCATION.lng)
+    // Origin is user location (use provided or default)
+    const originLocation = userLocation || USER_LOCATION
+    const origin = new google.maps.LatLng(originLocation.lat, originLocation.lng)
 
     // Destination is the last waypoint
     const dest = waypoints[waypoints.length - 1]
@@ -74,7 +75,7 @@ export function useDirections(): UseDirectionsResult {
     }))
 
     console.log('[Directions] Calculating route:', {
-      origin: { lat: USER_LOCATION.lat, lng: USER_LOCATION.lng },
+      origin: originLocation,
       destination: dest,
       waypointCount: intermediateWaypoints.length,
     })

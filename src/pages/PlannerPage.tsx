@@ -4,12 +4,16 @@ import { usePlannerState } from '@/hooks/usePlannerState'
 import { usePlannerSelection } from '@/hooks/usePlannerSelection'
 import { useMyPlan, generateStopsFromLeads } from '@/hooks/useMyPlan'
 import { useSchedulesContext } from '@/contexts/ScheduleContext'
+import { useUserLeads } from '@/hooks/useUserLeads'
 import { plannerAppointments, plannerLeads } from '@/data/appointments'
 import { mapLeads, leads as allLeadsData } from '@/data/leads'
 import { formatDateKey, formatTime24to12 } from '@/lib/calendar-utils'
+import { generateOptimalRoute } from '@/lib/route-generator'
+import { USER_LOCATION, generateRandomLocationInTerritory } from '@/lib/map-utils'
 import type { Appointment, Lead, ScheduleEvent } from '@/data/types'
 import type { LeadsFilters, ScoreFilter, ValueFilter } from '@/components/leads/LeadsFilterModal'
 import { defaultFilters } from '@/components/leads/LeadsFilterModal'
+import { NewLeadModal } from '@/components/leads/NewLeadModal'
 
 import {
   PlannerSidebar,
@@ -23,11 +27,12 @@ import type { SidebarTab } from '@/components/planner/PlannerSidebar'
 import { PlannerMapGoogle } from '@/components/google-maps/PlannerMapGoogle'
 
 // Filter helper functions
-function matchesScoreFilter(score: number, filter: ScoreFilter): boolean {
+function matchesScoreFilter(score: number | null, filter: ScoreFilter): boolean {
   switch (filter) {
-    case 'excellent': return score >= 85
-    case 'great': return score >= 70 && score < 85
-    case 'low': return score < 70
+    case 'excellent': return score !== null && score >= 85
+    case 'great': return score !== null && score >= 70 && score < 85
+    case 'low': return score !== null && score < 70
+    case 'unscored': return score === null
     default: return true
   }
 }
@@ -56,6 +61,7 @@ export function PlannerPage() {
     view,
     selectedLead,
     selectedAppointmentId,
+    shouldShowPlanView,
     viewLead,
     closeLead,
     createPlan,
@@ -108,6 +114,7 @@ export function PlannerPage() {
     denyRecommended,
     routeCoordinates,
     createPlanFromLeads,
+    regeneratePlanWithLeads,
     addLeadToPlan,
     reorderStops,
     updateStopTime,
@@ -128,6 +135,21 @@ export function PlannerPage() {
   // Schedule filter state (all, scheduled, unscheduled)
   const [scheduleFilter, setScheduleFilter] = useState<ScheduleFilter>('all')
 
+  // User location state (for route generation)
+  const [userLocation, setUserLocation] = useState(USER_LOCATION)
+
+  // Handler to update user location to random spot in territory
+  const handleUpdateLocation = useCallback(() => {
+    const newLocation = generateRandomLocationInTerritory()
+    setUserLocation(newLocation)
+  }, [])
+
+  // User-created leads
+  const { userLeads, addLead: addUserLead } = useUserLeads()
+
+  // New lead modal state
+  const [showNewLeadModal, setShowNewLeadModal] = useState(false)
+
   // Get today's date key
   const todayKey = useMemo(() => formatDateKey(new Date()), [])
 
@@ -144,8 +166,8 @@ export function PlannerPage() {
     // Convert schedule events with leads to Appointment format
     const scheduleAppointments: Appointment[] = []
     for (const event of appointmentEvents) {
-      // Find the lead data
-      const lead = [...allLeadsData, ...mapLeads, ...plannerLeads].find(
+      // Find the lead data (including user-created leads)
+      const lead = [...allLeadsData, ...mapLeads, ...plannerLeads, ...userLeads].find(
         l => l.id === event.leadId
       )
 
@@ -194,7 +216,7 @@ export function PlannerPage() {
       }
       return parseTime(a.time) - parseTime(b.time)
     })
-  }, [getEventsForDate, todayKey])
+  }, [getEventsForDate, todayKey, userLeads])
 
   // Wrap completeStop to sync with calendar using planDate
   const completeStop = useCallback(
@@ -218,8 +240,8 @@ export function PlannerPage() {
   // Combined selection count
   const totalSelectedCount = selectedAppointmentCount + selectedLeadCount
 
-  // All leads (unfiltered)
-  const allLeads = useMemo(() => plannerLeads, [])
+  // All leads (unfiltered) - including user-created leads
+  const allLeads = useMemo(() => [...plannerLeads, ...userLeads], [userLeads])
 
   // Filtered leads based on filter state
   const filteredLeads = useMemo(() => {
@@ -256,14 +278,15 @@ export function PlannerPage() {
     return count
   }, [leadFilters, scheduleFilter])
 
-  // All leads for map pins - include plannerLeads so they show on map
+  // All leads for map pins - include plannerLeads and user leads so they show on map
   const allMapLeads = useMemo(() => {
-    // Combine mapLeads with plannerLeads, avoiding duplicates by ID
-    const leadMap = new Map<string, typeof mapLeads[0]>()
+    // Combine mapLeads with plannerLeads and userLeads, avoiding duplicates by ID
+    const leadMap = new Map<string, Lead>()
     mapLeads.forEach(lead => leadMap.set(lead.id, lead))
     plannerLeads.forEach(lead => leadMap.set(lead.id, lead))
+    userLeads.forEach(lead => leadMap.set(lead.id, lead))
     return Array.from(leadMap.values())
-  }, [])
+  }, [userLeads])
 
   // Leads that are part of the current plan (for plan view)
   const planLeads = useMemo(() => {
@@ -296,19 +319,19 @@ export function PlannerPage() {
     let leads: Lead[]
 
     if (sidebarTab === 'appointments') {
-      // Only show leads that have appointments today
+      // Only show leads that have appointments today (no filters applied)
       const appointmentLeadIds = new Set(todaysAppointments.map(apt => apt.leadId))
       leads = allMapLeads.filter(lead => appointmentLeadIds.has(lead.id))
     } else {
       // Show filtered leads when on leads tab
       leads = filteredLeads
-    }
 
-    // Apply schedule filter
-    if (scheduleFilter === 'scheduled') {
-      leads = leads.filter(lead => scheduledLeadIds.has(lead.id))
-    } else if (scheduleFilter === 'unscheduled') {
-      leads = leads.filter(lead => !scheduledLeadIds.has(lead.id))
+      // Apply schedule filter (only on leads tab)
+      if (scheduleFilter === 'scheduled') {
+        leads = leads.filter(lead => scheduledLeadIds.has(lead.id))
+      } else if (scheduleFilter === 'unscheduled') {
+        leads = leads.filter(lead => !scheduledLeadIds.has(lead.id))
+      }
     }
 
     return leads
@@ -390,23 +413,55 @@ export function PlannerPage() {
     [viewLead]
   )
 
-  const handleAddToPlan = useCallback(() => {
-    if (selectedLead && !isLeadSelected(selectedLead.id)) {
-      toggleLead(selectedLead.id)
-    }
-    closeLead()
-  }, [selectedLead, isLeadSelected, toggleLead, closeLead])
+  const handleGenerateRoute = useCallback(() => {
+    const MAX_STOPS = 10
 
-  const handleCreatePlan = useCallback(() => {
-    // Get the actual Lead objects for selected IDs
-    const selectedLeads = allMapLeads.filter(lead => allSelectedIds.has(lead.id))
-    createPlanFromLeads(selectedLeads, selectedPlanDate)
+    // Check for existing completed stops (regeneration case)
+    const completedStops = stops.filter(s => s.lead && s.isCompleted)
+    const completedCount = completedStops.length
+
+    // Get ALL lead IDs to exclude:
+    // 1. Leads currently in today's plan
+    // 2. Leads scheduled on ANY other day (from scheduledLeadIds)
+    const excludeLeadIds = new Set(
+      stops.filter(s => s.lead).map(s => s.lead!.id)
+    )
+
+    // Add all leads that are already scheduled on any day
+    scheduledLeadIds.forEach(id => excludeLeadIds.add(id))
+
+    // Calculate how many new stops we need
+    const remainingSlots = MAX_STOPS - completedCount
+
+    if (remainingSlots <= 0) {
+      // Already at max completed stops, just view the plan
+      createPlan()
+      return
+    }
+
+    // Generate new leads, excluding leads in the plan AND leads scheduled on other days
+    const newLeads = generateOptimalRoute(allMapLeads, {
+      stopCount: remainingSlots,
+      excludeLeadIds,
+      userLocation,
+    })
+
+    if (completedCount > 0) {
+      // Regeneration: preserve completed stops, add new leads
+      regeneratePlanWithLeads(newLeads, selectedPlanDate)
+    } else {
+      // Fresh plan: create from scratch
+      createPlanFromLeads(newLeads, selectedPlanDate)
+    }
+
     createPlan()
 
-    // Sync the plan stops to the calendar for the selected date
-    const planStops = generateStopsFromLeads(selectedLeads)
-    syncPlanToCalendar(planStops, selectedPlanDate)
-  }, [createPlan, allMapLeads, allSelectedIds, createPlanFromLeads, syncPlanToCalendar, selectedPlanDate])
+    // Sync to calendar - need to get the combined leads for calendar
+    // Use replaceExisting to remove old uncompleted events when regenerating
+    const completedLeads = completedStops.map(s => s.lead!)
+    const allLeads = [...completedLeads, ...newLeads]
+    syncPlanToCalendar(generateStopsFromLeads(allLeads), selectedPlanDate, { replaceExisting: true })
+  }, [allMapLeads, stops, createPlanFromLeads, regeneratePlanWithLeads, createPlan, syncPlanToCalendar, selectedPlanDate, userLocation, scheduledLeadIds])
 
   const handleGetDirections = useCallback(() => {
     // Get all stops with leads (excluding commutes)
@@ -468,6 +523,14 @@ export function PlannerPage() {
     closeLead()
   }, [selectedLead, getEventsForDate, deleteEvent, closeLead])
 
+  // Handle creating a new lead
+  const handleCreateLead = useCallback(
+    (lead: Lead) => {
+      addUserLead(lead)
+    },
+    [addUserLead]
+  )
+
   // Handle reordering stops and sync with calendar
   const handleReorderStops = useCallback(
     (fromIndex: number, toIndex: number) => {
@@ -496,11 +559,13 @@ export function PlannerPage() {
 
   const isMyPlanView = view === 'myPlan'
   const isViewingLead = view === 'viewLead' && selectedLead
+  // Use shouldShowPlanView for UI that should persist when viewing lead from plan
+  const showPlanUI = shouldShowPlanView
 
   return (
     <div className="flex h-full overflow-hidden">
       {/* Left sidebar - Selection or My Plan view */}
-      {isMyPlanView ? (
+      {showPlanUI ? (
         <MyPlanView
           stops={stops}
           createdDate={createdDate}
@@ -513,6 +578,7 @@ export function PlannerPage() {
           onDenyRecommended={denyRecommended}
           onReorderStops={handleReorderStops}
           onUpdateStopTime={handleUpdateStopTime}
+          onViewLead={handleViewLead}
           onGetDirections={handleGetDirections}
           onSchedule={handleSchedule}
           onDeletePlan={backToSelection}
@@ -524,19 +590,15 @@ export function PlannerPage() {
           <PlannerSidebar
             appointments={todaysAppointments}
             leads={filteredLeads}
-            selectedAppointmentIds={selectedAppointmentIds}
-            selectedLeadIds={selectedLeadIds}
-            onToggleAppointment={toggleAppointment}
-            onToggleLead={toggleLead}
             onViewAppointment={handleViewAppointment}
             onViewLead={handleViewLead}
             activeTab={sidebarTab}
             onTabChange={setSidebarTab}
             totalLeadCount={allLeads.length}
+            onAddLead={() => setShowNewLeadModal(true)}
           />
           <PlannerBottomBar
-            selectedCount={totalSelectedCount}
-            onCreatePlan={handleCreatePlan}
+            onGenerateRoute={handleGenerateRoute}
             existingPlanCount={stops.filter(s => s.lead).length}
             onViewPlan={createPlan}
             selectedDate={selectedPlanDate}
@@ -548,7 +610,7 @@ export function PlannerPage() {
 
       {/* Map */}
       <div className="flex-1 h-full relative">
-        {!isMyPlanView && sidebarTab === 'leads' && (
+        {!showPlanUI && sidebarTab === 'leads' && (
           <MapFilterBar
             filters={leadFilters}
             onFiltersChange={setLeadFilters}
@@ -560,7 +622,7 @@ export function PlannerPage() {
           />
         )}
         <PlannerMapGoogle
-          leads={isMyPlanView ? planLeads : visibleMapLeads}
+          leads={showPlanUI ? planLeads : visibleMapLeads}
           selectedLeadIds={allSelectedIds}
           completedLeadIds={completedLeadIds}
           scheduledLeadIds={scheduledLeadIds}
@@ -568,8 +630,11 @@ export function PlannerPage() {
           onAddToPlan={handleMapAddToPlan}
           onViewDetails={handleMapViewDetails}
           routeCoordinates={routeCoordinates}
-          showRoute={isMyPlanView}
+          showRoute={showPlanUI}
           focusedLeadId={selectedLead?.id}
+          userLocation={userLocation}
+          showUpdateLocationButton={!showPlanUI && sidebarTab === 'appointments'}
+          onUpdateLocation={handleUpdateLocation}
         />
       </div>
 
@@ -578,13 +643,20 @@ export function PlannerPage() {
         <LeadDetailPanel
           lead={selectedLead}
           onClose={closeLead}
-          onAddToPlan={handleAddToPlan}
           appointmentId={selectedAppointmentId}
           onRemoveAppointment={handleRemoveAppointment}
           isScheduled={scheduledLeadIds.has(selectedLead.id)}
           onRemoveFromCalendar={handleRemoveFromCalendar}
         />
       )}
+
+      {/* New Lead Modal */}
+      <NewLeadModal
+        isOpen={showNewLeadModal}
+        onClose={() => setShowNewLeadModal(false)}
+        onCreateLead={handleCreateLead}
+        userLocation={userLocation}
+      />
     </div>
   )
 }

@@ -134,7 +134,6 @@ export function PlannerMap({
               >
                 <MapPopup
                   lead={lead}
-                  onAddToPlan={() => handleAddToPlan(lead.id)}
                   onViewDetails={() => handleViewDetails(lead)}
                 />
               </Popup>

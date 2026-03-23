@@ -8,29 +8,23 @@ export type SidebarTab = 'appointments' | 'leads'
 interface PlannerSidebarProps {
   appointments: Appointment[]
   leads: Lead[]
-  selectedAppointmentIds: Set<string>
-  selectedLeadIds: Set<string>
-  onToggleAppointment: (id: string) => void
-  onToggleLead: (id: string) => void
   onViewAppointment: (appointment: Appointment) => void
   onViewLead: (lead: Lead) => void
   activeTab: SidebarTab
   onTabChange: (tab: SidebarTab) => void
   totalLeadCount: number
+  onAddLead?: () => void
 }
 
 export function PlannerSidebar({
   appointments,
   leads,
-  selectedAppointmentIds,
-  selectedLeadIds,
-  onToggleAppointment,
-  onToggleLead,
   onViewAppointment,
   onViewLead,
   activeTab,
   onTabChange,
   totalLeadCount,
+  onAddLead,
 }: PlannerSidebarProps) {
 
   return (
@@ -68,16 +62,13 @@ export function PlannerSidebar({
         {activeTab === 'appointments' ? (
           <PlannerAppointments
             appointments={appointments}
-            selectedIds={selectedAppointmentIds}
-            onToggle={onToggleAppointment}
             onViewLead={onViewAppointment}
           />
         ) : (
           <PlannerLeadList
             leads={leads}
-            selectedIds={selectedLeadIds}
-            onToggle={onToggleLead}
             onViewLead={onViewLead}
+            onAddLead={onAddLead}
           />
         )}
       </div>

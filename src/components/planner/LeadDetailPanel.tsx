@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Navigation, ExternalLink, Mic, MicOff, Send, Trash2, Calendar } from 'lucide-react'
+import { X, Navigation, ExternalLink, Mic, MicOff, Send, Trash2, Calendar } from 'lucide-react'
 import { ConversionScoreTag, StatusTag } from '@/components/shared'
 import { formatCurrency } from '@/lib/utils'
 import { useLeadNotes } from '@/hooks/useLeadNotes'
@@ -9,7 +9,6 @@ import type { Lead } from '@/data/types'
 interface LeadDetailPanelProps {
   lead: Lead
   onClose: () => void
-  onAddToPlan: () => void
   appointmentId?: string | null
   onRemoveAppointment?: () => void
   isScheduled?: boolean
@@ -29,7 +28,6 @@ function formatNoteDate(date: Date): string {
 export function LeadDetailPanel({
   lead,
   onClose,
-  onAddToPlan,
   appointmentId,
   onRemoveAppointment,
   isScheduled,
@@ -128,14 +126,6 @@ export function LeadDetailPanel({
 
       {/* Action Buttons */}
       <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-[#DFEBF4]">
-        <button
-          type="button"
-          onClick={onAddToPlan}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#0061AA] text-white text-sm font-medium rounded-full hover:bg-[#005090] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add to plan
-        </button>
         <a
           href={`https://maps.google.com/maps?daddr=${encodeURIComponent(fullAddress)}`}
           target="_blank"

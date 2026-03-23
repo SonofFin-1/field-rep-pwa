@@ -42,6 +42,7 @@ export interface RepPerformance {
   averageRating: number
   totalSales: number
   conversionRate: number
+  hasIncompletePastStops: boolean
 }
 
 export interface AdminKpiSummary {
@@ -63,7 +64,13 @@ export interface FieldRep {
 
 export type DateRangeFilter = 'today' | 'week' | 'month' | 'all'
 
+export type OutcomeFilter = 'all' | 'sale' | 'callback' | 'not_interested' | 'not_home'
+
+export type EmployeeSortField = 'name' | 'completion' | 'rating' | 'sales' | 'conversion'
+
 export interface AdminFilters {
   dateRange: DateRangeFilter
+  specificDate: string | null // YYYY-MM-DD format, overrides dateRange when set
   repId: string | null // null = all reps
+  outcome: OutcomeFilter
 }

@@ -20,6 +20,8 @@ export function Sidebar() {
     localStorage.removeItem('field-rep-schedules')
     localStorage.removeItem('field-rep-schedules-seed-version')
     localStorage.removeItem('field-rep-plan')
+    localStorage.removeItem('field-rep-user-leads')
+    localStorage.removeItem('admin-dismissed-alerts')
     // Clear all date-keyed plans
     const keysToRemove: string[] = []
     for (let i = 0; i < localStorage.length; i++) {

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { PlanTimelineItem } from './PlanTimelineItem'
 import { StopFeedbackModal } from './StopFeedbackModal'
-import type { PlanStop, StopOutcome } from '@/data/types'
+import type { PlanStop, StopOutcome, Lead } from '@/data/types'
 
 interface PlanTimelineProps {
   stops: PlanStop[]
@@ -11,6 +11,7 @@ interface PlanTimelineProps {
   onDenyRecommended: (stopId: string) => void
   onReorderStops?: (fromIndex: number, toIndex: number) => void
   onUpdateStopTime?: (stopId: string, newTimeRange: string) => void
+  onViewLead?: (lead: Lead) => void
 }
 
 export function PlanTimeline({
@@ -21,6 +22,7 @@ export function PlanTimeline({
   onDenyRecommended,
   onReorderStops,
   onUpdateStopTime,
+  onViewLead,
 }: PlanTimelineProps) {
   const [feedbackStop, setFeedbackStop] = useState<PlanStop | null>(null)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
@@ -121,6 +123,7 @@ export function PlanTimeline({
                 onComplete={() => handleCompleteClick(stop)}
                 onAccept={() => onAcceptRecommended(stop.id)}
                 onDeny={() => onDenyRecommended(stop.id)}
+                onViewLead={onViewLead}
               />
             )
           }
@@ -143,10 +146,12 @@ export function PlanTimeline({
             >
               <PlanTimelineItem
                 stop={stop}
+                stopNumber={currentLeadIndex + 1}
                 onComplete={() => handleCompleteClick(stop)}
                 onAccept={() => onAcceptRecommended(stop.id)}
                 onDeny={() => onDenyRecommended(stop.id)}
                 onUpdateTime={onUpdateStopTime}
+                onViewLead={onViewLead}
                 isDragging={draggedIndex === currentLeadIndex}
               />
             </div>

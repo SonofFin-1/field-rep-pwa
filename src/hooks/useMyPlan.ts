@@ -120,10 +120,10 @@ function getAllPlanDateKeys(): string[] {
   return keys.sort()
 }
 
-// Work day: 8 AM to 6 PM (600 minutes)
+// Work day: 9 AM to 6 PM
 // Client stop: 30 min, Commute: 15 min
 // Pattern: Client (30) + Commute (15) = 45 min per cycle
-const WORK_START_HOUR = 8
+const WORK_START_HOUR = 9
 const CLIENT_DURATION = 30 // minutes
 const COMMUTE_DURATION = 15 // minutes
 
@@ -233,6 +233,63 @@ export function useMyPlan(initialDate?: Date) {
     }
   }, [])
 
+  // Regenerate plan: keep completed stops, add new leads for remaining slots
+  const regeneratePlanWithLeads = useCallback((newLeads: Lead[], targetDate?: Date) => {
+    setStops(prev => {
+      // Get existing completed lead stops (preserve their state)
+      const completedStops = prev.filter(s => s.type !== 'Commute' && s.isCompleted)
+
+      // Combine completed leads with new leads
+      const allLeadStops: PlanStop[] = []
+
+      // First, add completed stops (preserve their completion status)
+      completedStops.forEach((stop, index) => {
+        allLeadStops.push({
+          ...stop,
+          timeRange: generateTimeRange(index * 2),
+        })
+      })
+
+      // Then add new leads as uncompleted stops
+      newLeads.forEach((lead, index) => {
+        const stopIndex = completedStops.length + index
+        allLeadStops.push({
+          id: `stop-${Date.now()}-${stopIndex}`,
+          type: 'Home Assessment',
+          timeRange: generateTimeRange(stopIndex * 2),
+          lead: lead,
+          address: `${lead.address}, ${lead.city} ${lead.zip}`,
+          notes: '',
+          isCompleted: false,
+        })
+      })
+
+      // Rebuild with commutes
+      const finalStops: PlanStop[] = []
+      allLeadStops.forEach((stop, index) => {
+        finalStops.push(stop)
+
+        // Add commute after each stop (except the last one)
+        if (index < allLeadStops.length - 1) {
+          const nextStop = allLeadStops[index + 1]
+          finalStops.push({
+            id: `commute-${Date.now()}-${index}`,
+            type: 'Commute',
+            timeRange: generateTimeRange(index * 2 + 1),
+            address: nextStop.lead ? `${nextStop.lead.address}, ${nextStop.lead.city}` : '',
+            isCompleted: false,
+          })
+        }
+      })
+
+      return finalStops
+    })
+
+    if (targetDate) {
+      setPlanDateState(targetDate)
+    }
+  }, [])
+
   const completeStop = useCallback((stopId: string) => {
     setStops(prev =>
       prev.map(stop =>
@@ -323,9 +380,10 @@ export function useMyPlan(initialDate?: Date) {
     })
   }, [])
 
+  // Route coordinates only include uncompleted stops (route starts from user location)
   const routeCoordinates = useMemo(() => {
     return stops
-      .filter(stop => stop.lead)
+      .filter(stop => stop.lead && !stop.isCompleted)
       .map(stop => ({
         lat: stop.lead!.lat,
         lng: stop.lead!.lng,
@@ -455,6 +513,7 @@ export function useMyPlan(initialDate?: Date) {
     denyRecommended,
     routeCoordinates,
     createPlanFromLeads,
+    regeneratePlanWithLeads,
     addLeadToPlan,
     clearPlan,
     reorderStops,

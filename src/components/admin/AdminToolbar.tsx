@@ -1,14 +1,16 @@
 import { SearchBar } from '@/components/shared'
+import { CalendarPicker } from './CalendarPicker'
 import { DateRangePicker } from './DateRangePicker'
-import { RepSelector } from './RepSelector'
-import type { DateRangeFilter, FieldRep } from '@/data/admin-types'
+import { OutcomeSelector } from './OutcomeSelector'
+import type { DateRangeFilter, OutcomeFilter } from '@/data/admin-types'
 
 interface AdminToolbarProps {
   dateRange: DateRangeFilter
   onDateRangeChange: (value: DateRangeFilter) => void
-  repId: string | null
-  onRepChange: (repId: string | null) => void
-  reps: FieldRep[]
+  specificDate: string | null
+  onSpecificDateChange: (value: string | null) => void
+  outcome: OutcomeFilter
+  onOutcomeChange: (value: OutcomeFilter) => void
   search: string
   onSearchChange: (value: string) => void
 }
@@ -16,9 +18,10 @@ interface AdminToolbarProps {
 export function AdminToolbar({
   dateRange,
   onDateRangeChange,
-  repId,
-  onRepChange,
-  reps,
+  specificDate,
+  onSpecificDateChange,
+  outcome,
+  onOutcomeChange,
   search,
   onSearchChange,
 }: AdminToolbarProps) {
@@ -26,12 +29,13 @@ export function AdminToolbar({
     <div className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">
         <DateRangePicker value={dateRange} onChange={onDateRangeChange} />
-        <RepSelector reps={reps} value={repId} onChange={onRepChange} />
+        <CalendarPicker value={specificDate} onChange={onSpecificDateChange} />
+        <OutcomeSelector value={outcome} onChange={onOutcomeChange} />
       </div>
       <SearchBar
         value={search}
         onChange={onSearchChange}
-        placeholder="Search stops..."
+        placeholder="Search employees..."
         className="w-64"
       />
     </div>

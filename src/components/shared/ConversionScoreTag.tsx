@@ -1,8 +1,8 @@
 import { cn, getScoreColor } from '@/lib/utils'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, HelpCircle } from 'lucide-react'
 
 interface ConversionScoreTagProps {
-  score: number
+  score: number | null
   className?: string
   showLabel?: boolean
 }
@@ -12,7 +12,8 @@ export function ConversionScoreTag({
   className,
   showLabel = false,
 }: ConversionScoreTagProps) {
-  const { bg, text, showCheckmark } = getScoreColor(score)
+  const { bg, text, showCheckmark, level } = getScoreColor(score)
+  const isUnscored = level === 'unscored'
 
   return (
     <span
@@ -22,8 +23,9 @@ export function ConversionScoreTag({
       )}
       style={{ backgroundColor: bg, color: text }}
     >
+      {isUnscored && <HelpCircle className="w-3.5 h-3.5" />}
       {showCheckmark && <CheckCircle2 className="w-3.5 h-3.5" />}
-      <span>{score}</span>
+      <span>{score === null ? '?' : score}</span>
       {showLabel && <span className="ml-0.5">Conversion Score</span>}
     </span>
   )

@@ -25,6 +25,9 @@ interface PlannerMapGoogleProps {
   routeCoordinates?: { lat: number; lng: number }[]
   showRoute?: boolean
   focusedLeadId?: string | null
+  userLocation?: { lat: number; lng: number }
+  showUpdateLocationButton?: boolean
+  onUpdateLocation?: () => void
 }
 
 const mapContainerStyle = {
@@ -94,6 +97,9 @@ function PlannerMapContent({
   routeCoordinates,
   showRoute = false,
   focusedLeadId,
+  userLocation = USER_LOCATION,
+  showUpdateLocationButton = false,
+  onUpdateLocation,
 }: PlannerMapGoogleProps) {
   const [activePopupId, setActivePopupId] = useState<string | null>(null)
   const [map, setMap] = useState<google.maps.Map | null>(null)
@@ -110,16 +116,19 @@ function PlannerMapContent({
     ? JSON.stringify(routeCoordinates.map(c => `${c.lat},${c.lng}`))
     : ''
 
+  // Create a stable key for user location
+  const userLocationKey = `${userLocation.lat},${userLocation.lng}`
+
   // Calculate directions when route should be shown
   useEffect(() => {
-    console.log('[PlannerMap] Route effect:', { showRoute, routeKey, coordsLength: routeCoordinates?.length })
+    console.log('[PlannerMap] Route effect:', { showRoute, routeKey, coordsLength: routeCoordinates?.length, userLocation })
     if (showRoute && routeCoordinates && routeCoordinates.length > 0) {
-      calculateRoute(routeCoordinates)
+      calculateRoute(routeCoordinates, userLocation)
     } else {
       clearRoute()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showRoute, routeKey]) // Use routeKey instead of routeCoordinates for stable comparison
+  }, [showRoute, routeKey, userLocationKey]) // Use routeKey instead of routeCoordinates for stable comparison
 
   // Fit bounds when route coordinates change
   useEffect(() => {
@@ -129,7 +138,7 @@ function PlannerMapContent({
         bounds.extend({ lat: coord.lat, lng: coord.lng })
       })
       // Include user location
-      bounds.extend({ lat: USER_LOCATION.lat, lng: USER_LOCATION.lng })
+      bounds.extend({ lat: userLocation.lat, lng: userLocation.lng })
       map.fitBounds(bounds, 50)
     }
   }, [map, showRoute, routeCoordinates])
@@ -205,7 +214,7 @@ function PlannerMapContent({
 
         {/* User location */}
         <OverlayView
-          position={{ lat: USER_LOCATION.lat, lng: USER_LOCATION.lng }}
+          position={{ lat: userLocation.lat, lng: userLocation.lng }}
           mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
         >
           <UserLocationMarker />
@@ -227,11 +236,13 @@ function PlannerMapContent({
         )}
 
         {/* Lead pins */}
-        {leads.map(lead => {
+        {leads.map((lead, index) => {
           const isSelected = selectedLeadIds.has(lead.id)
           const isFocused = focusedLeadId === lead.id
           const isCompleted = completedLeadIds.has(lead.id)
           const isScheduled = scheduledLeadIds.has(lead.id)
+          // Show stop number when in route mode (1-indexed)
+          const stopNumber = showRoute ? index + 1 : undefined
           return (
             <OverlayView
               key={lead.id}
@@ -245,6 +256,7 @@ function PlannerMapContent({
                   isFocused={isFocused}
                   isCompleted={isCompleted}
                   isScheduled={isScheduled}
+                  stopNumber={stopNumber}
                   onClick={() => handleMarkerClick(lead)}
                 />
                 {/* Popup */}
@@ -261,7 +273,6 @@ function PlannerMapContent({
                   >
                     <MapPopup
                       lead={lead}
-                      onAddToPlan={() => handleAddToPlan(lead.id)}
                       onViewDetails={() => handleViewDetails(lead)}
                     />
                     {/* Popup arrow */}
@@ -284,11 +295,15 @@ function PlannerMapContent({
         })}
       </GoogleMap>
 
-      {/* Planner label overlay */}
-      {!showRoute && (
-        <div className="absolute bottom-1/2 left-1/2 transform -translate-x-1/2 translate-y-1/2 pointer-events-none">
-          <span className="text-[#778188] text-lg font-medium opacity-60">Planner</span>
-        </div>
+      {/* Update Location button */}
+      {showUpdateLocationButton && onUpdateLocation && (
+        <button
+          type="button"
+          onClick={onUpdateLocation}
+          className="absolute top-4 left-4 px-4 py-2 bg-white text-[#0061AA] text-sm font-semibold rounded-full shadow-md border border-[#DFEBF4] hover:bg-[#F0F5F7] transition-colors z-10"
+        >
+          Update Location
+        </button>
       )}
 
     </div>

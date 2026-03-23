@@ -1,9 +1,10 @@
 import L from 'leaflet'
 import { SCORE_THRESHOLDS } from './constants'
 
-export type PinColor = 'green' | 'yellow' | 'grey'
+export type PinColor = 'green' | 'yellow' | 'grey' | 'unscored'
 
-export function getScorePinColor(score: number): PinColor {
+export function getScorePinColor(score: number | null): PinColor {
+  if (score === null) return 'unscored'
   if (score >= SCORE_THRESHOLDS.EXCELLENT) return 'green'
   if (score >= SCORE_THRESHOLDS.GREAT) return 'yellow'
   return 'grey'
@@ -13,6 +14,7 @@ const PIN_COLORS = {
   green: { bg: '#166534', text: '#FFFFFF' },
   yellow: { bg: '#C08703', text: '#FFFFFF' },
   grey: { bg: '#778188', text: '#FFFFFF' },
+  unscored: { bg: '#F87171', text: '#FFFFFF' },  // Light red for unscored
 }
 
 export function createScorePin(score: number, isSelected = false): L.DivIcon {
@@ -130,6 +132,23 @@ export const TERRITORY_BOUNDARY_GOOGLE: google.maps.LatLngLiteral[] = [
 
 // User's current location (for demo)
 export const USER_LOCATION = { lat: 44.88, lng: -93.37 }
+
+/**
+ * Generate a random location within the territory boundary
+ * Uses the TERRITORY_BOUNDARY defined above (rectangular area)
+ */
+export function generateRandomLocationInTerritory(): { lat: number; lng: number } {
+  // Territory bounds from TERRITORY_BOUNDARY
+  const minLat = 44.83
+  const maxLat = 44.95
+  const minLng = -93.40
+  const maxLng = -93.25
+
+  const lat = minLat + Math.random() * (maxLat - minLat)
+  const lng = minLng + Math.random() * (maxLng - minLng)
+
+  return { lat, lng }
+}
 
 // Export PIN_COLORS for Google Maps marker components
 export { PIN_COLORS }

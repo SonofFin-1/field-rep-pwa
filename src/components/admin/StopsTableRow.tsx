@@ -10,6 +10,13 @@ interface StopsTableRowProps {
   onClick: (stop: AdminStopRecord) => void
 }
 
+const outcomeLabels: Record<string, string> = {
+  sale: 'Sale',
+  callback: 'Callback',
+  not_interested: 'Not Interested',
+  not_home: 'Not Home',
+}
+
 export function StopsTableRow({ stop, onClick }: StopsTableRowProps) {
   const hasNotes = !!stop.feedback?.notes
 
@@ -25,14 +32,14 @@ export function StopsTableRow({ stop, onClick }: StopsTableRowProps) {
       </div>
 
       {/* Lead Name */}
-      <div className="w-[180px]">
+      <div className="w-[160px]">
         <span className="text-sm text-[#46494B] font-medium truncate block">
           {stop.leadName}
         </span>
       </div>
 
       {/* Address */}
-      <div className="w-[220px]">
+      <div className="w-[200px]">
         <span className="text-sm text-[#778188] truncate block">
           {stop.address}, {stop.city}
         </span>
@@ -50,8 +57,15 @@ export function StopsTableRow({ stop, onClick }: StopsTableRowProps) {
         <StopStatusBadge status={stop.status} />
       </div>
 
+      {/* Outcome */}
+      <div className="w-[120px]">
+        <span className="text-sm text-[#46494B]">
+          {stop.outcome ? outcomeLabels[stop.outcome] : '—'}
+        </span>
+      </div>
+
       {/* Notes */}
-      <div className="w-[80px] flex items-center justify-center">
+      <div className="w-[60px] flex items-center justify-center">
         {hasNotes ? (
           <MessageSquare size={16} className="text-[#0061AA]" />
         ) : (
@@ -60,7 +74,7 @@ export function StopsTableRow({ stop, onClick }: StopsTableRowProps) {
       </div>
 
       {/* Rating */}
-      <div className="w-[120px]">
+      <div className="w-[100px]">
         <RatingDisplay rating={stop.feedback?.accuracyRating} showNumeric={false} />
       </div>
     </div>

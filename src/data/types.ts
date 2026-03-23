@@ -13,7 +13,7 @@ export interface Lead {
   city: string
   state: string
   zip: string
-  score: number
+  score: number | null  // null for unscored/user-created leads
   value: number
   status: 'New' | 'Returning'
   lat: number
@@ -22,6 +22,7 @@ export interface Lead {
   summary?: string
   purchaseHistory?: PurchaseHistoryItem[]
   visitHistory?: VisitHistoryItem[]
+  isUserCreated?: boolean  // Flag for user-created leads
 }
 
 export interface PurchaseHistoryItem {

@@ -32,12 +32,22 @@ export function formatCurrency(amount: number): string {
 /**
  * Get score color configuration based on score value
  */
-export function getScoreColor(score: number): {
+export function getScoreColor(score: number | null): {
   bg: string
   text: string
   showCheckmark: boolean
-  level: 'excellent' | 'great' | 'low'
+  level: 'excellent' | 'great' | 'low' | 'unscored'
 } {
+  // Handle unscored leads
+  if (score === null) {
+    return {
+      bg: '#FEE2E2',  // Light red background
+      text: '#DC2626',  // Red text
+      showCheckmark: false,
+      level: 'unscored',
+    }
+  }
+
   if (score >= SCORE_THRESHOLDS.EXCELLENT) {
     return {
       bg: COLORS.scoreGreen.bg,

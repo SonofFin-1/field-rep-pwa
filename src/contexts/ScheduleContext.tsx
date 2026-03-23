@@ -5,7 +5,7 @@ import type { PlanStop } from '@/data/types'
 
 type SchedulesContextType = ReturnType<typeof useSchedules> & {
   syncStopCompletion: (leadId: string, date?: Date) => void
-  syncPlanToCalendar: (stops: PlanStop[], date?: Date) => void
+  syncPlanToCalendar: (stops: PlanStop[], date?: Date, options?: { replaceExisting?: boolean }) => void
   updatePlanTimesOnCalendar: (stops: PlanStop[], date?: Date) => void
 }
 
@@ -52,16 +52,32 @@ export function SchedulesProvider({ children }: { children: ReactNode }) {
 
   // Sync plan stops to calendar
   const syncPlanToCalendar = useCallback(
-    (stops: PlanStop[], date?: Date) => {
+    (stops: PlanStop[], date?: Date, options?: { replaceExisting?: boolean }) => {
       const dateKey = date ? formatDateKey(date) : formatDateKey(new Date())
+      const replaceExisting = options?.replaceExisting ?? false
 
       // Filter to only stops with leads (not commutes)
       const stopsWithLeads = stops.filter(stop => stop.lead && stop.type !== 'Commute')
 
+      // Get the set of lead IDs that should be in the plan
+      const planLeadIds = new Set(stopsWithLeads.map(s => s.lead!.id))
+
       // Get existing events once before the loop
       const existingEvents = schedules.getEventsForDate(dateKey)
+
+      // If replaceExisting, remove events for leads NOT in the new plan (and not completed)
+      if (replaceExisting) {
+        existingEvents.forEach(event => {
+          if (event.leadId && !planLeadIds.has(event.leadId) && event.status !== 'completed') {
+            schedules.deleteEvent(event.id)
+          }
+        })
+      }
+
+      // Re-fetch existing events after deletions
+      const currentEvents = schedules.getEventsForDate(dateKey)
       const existingLeadIds = new Set(
-        existingEvents.filter(e => e.leadId).map(e => e.leadId)
+        currentEvents.filter(e => e.leadId).map(e => e.leadId)
       )
 
       // Track leads we add in this batch to prevent duplicates
