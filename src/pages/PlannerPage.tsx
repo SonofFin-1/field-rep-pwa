@@ -71,14 +71,11 @@ export function PlannerPage() {
   // Selection management for appointments
   const {
     selectedLeadIds: selectedAppointmentIds,
-    selectedCount: selectedAppointmentCount,
-    toggleLead: toggleAppointment,
   } = usePlannerSelection()
 
   // Selection management for leads
   const {
     selectedLeadIds,
-    selectedCount: selectedLeadCount,
     toggleLead,
     isSelected: isLeadSelected,
   } = usePlannerSelection()
@@ -236,9 +233,6 @@ export function PlannerPage() {
     setSelectedPlanDate(newDate)
     setPlanDate(newDate)
   }, [setPlanDate])
-
-  // Combined selection count
-  const totalSelectedCount = selectedAppointmentCount + selectedLeadCount
 
   // All leads (unfiltered) - including user-created leads
   const allLeads = useMemo(() => [...plannerLeads, ...userLeads], [userLeads])
@@ -557,7 +551,6 @@ export function PlannerPage() {
     stopsRef.current = stops
   }, [stops, updatePlanTimesOnCalendar, planDate])
 
-  const isMyPlanView = view === 'myPlan'
   const isViewingLead = view === 'viewLead' && selectedLead
   // Use shouldShowPlanView for UI that should persist when viewing lead from plan
   const showPlanUI = shouldShowPlanView

@@ -44,8 +44,8 @@ export function TerritoryMap() {
   const { allLeads } = useLeads()
 
   // Count leads by score category
-  const excellentCount = allLeads.filter(l => l.score >= SCORE_THRESHOLDS.EXCELLENT).length
-  const greatCount = allLeads.filter(l => l.score >= SCORE_THRESHOLDS.GREAT && l.score < SCORE_THRESHOLDS.EXCELLENT).length
+  const excellentCount = allLeads.filter(l => (l.score ?? 0) >= SCORE_THRESHOLDS.EXCELLENT).length
+  const greatCount = allLeads.filter(l => (l.score ?? 0) >= SCORE_THRESHOLDS.GREAT && (l.score ?? 0) < SCORE_THRESHOLDS.EXCELLENT).length
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return
@@ -77,7 +77,7 @@ export function TerritoryMap() {
     // Add lead pins for all listed leads
     allLeads.forEach(lead => {
       const marker = L.marker([lead.lat, lead.lng], {
-        icon: createSimplePin(lead.score),
+        icon: createSimplePin(lead.score ?? 0),
       })
       marker.addTo(map)
     })
